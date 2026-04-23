@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"github.com/jubinaghara/terraform-provider-sophosfirewall/internal/common"
 	"os"
 	"os/exec"
-	"github.com/jubinaghara/terraform-provider-sophosfirewall/internal/common"
 )
 
 type Client struct {
@@ -21,8 +21,20 @@ func NewClient(baseClient *common.BaseClient) *Client {
 }
 
 type firewallRuleSetXML struct {
-	Operation    string         `xml:"operation,attr"`
+	Operation     string          `xml:"operation,attr"`
 	FirewallRules []*FirewallRule `xml:"FirewallRule"`
+}
+
+type firewallRuleNameXML struct {
+	Name string `xml:"Name"`
+}
+
+type getFirewallRuleBlockXML struct {
+	FirewallRule firewallRuleNameXML `xml:"FirewallRule"`
+}
+
+type removeFirewallRuleBlockXML struct {
+	FirewallRule firewallRuleNameXML `xml:"FirewallRule"`
 }
 
 // CreateFirewallRule creates a new firewall rule
@@ -32,21 +44,24 @@ func (c *Client) CreateFirewallRule(rule *FirewallRule) error {
 
 // ReadFirewallRule reads an existing firewall rule
 func (c *Client) ReadFirewallRule(name string) (*FirewallRule, error) {
-	// Format the request
-	requestBody := fmt.Sprintf(`<Request>
-   <Login>
-        <Username>%s</Username>
-        <Password>%s</Password>
-    </Login>
-    <Get> 
-        <FirewallRule>
-            <Name>%s</Name>
-        </FirewallRule>
-    </Get>
-</Request>`, c.BaseClient.Username, c.BaseClient.Password, name)
+	request := common.RequestXML{
+		XMLName: xml.Name{Local: "Request"},
+		Login: common.LoginXML{
+			Username: c.BaseClient.Username,
+			Password: c.BaseClient.Password,
+		},
+		Get: getFirewallRuleBlockXML{
+			FirewallRule: firewallRuleNameXML{Name: name},
+		},
+	}
+
+	xmlData, err := xml.MarshalIndent(request, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling XML API read request: %v", err)
+	}
 
 	// Create a temporary file with the request content
-	tempFileName, err := common.CreateTempFile([]byte(requestBody))
+	tempFileName, err := common.CreateTempFile(xmlData)
 	if err != nil {
 		return nil, fmt.Errorf("error creating temporary file for read: %v", err)
 	}
@@ -62,7 +77,7 @@ func (c *Client) ReadFirewallRule(name string) (*FirewallRule, error) {
 	defer os.Remove(responseTempFileName)
 
 	url := fmt.Sprintf("%s/webconsole/APIController", c.BaseClient.Endpoint)
-	
+
 	// Execute curl command
 	cmd := exec.Command("curl",
 		"-k",
@@ -70,7 +85,7 @@ func (c *Client) ReadFirewallRule(name string) (*FirewallRule, error) {
 		"-F", fmt.Sprintf("reqxml=<%s", tempFileName),
 		"-o", responseTempFileName,
 	)
-	
+
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
@@ -85,10 +100,10 @@ func (c *Client) ReadFirewallRule(name string) (*FirewallRule, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading response file: %v", err)
 	}
-	
+
 	responseBody := string(responseData)
 	fmt.Printf("API Response: %s\n", responseBody)
-	
+
 	// Check for empty response
 	if len(responseBody) == 0 {
 		return nil, fmt.Errorf("received empty response from Sophos API")
@@ -96,9 +111,9 @@ func (c *Client) ReadFirewallRule(name string) (*FirewallRule, error) {
 
 	// Parse the response XML
 	var response struct {
-		XMLName      xml.Name `xml:"Response"`
-		APIVersion   string   `xml:"APIVersion,attr"`
-		Login        struct {
+		XMLName    xml.Name `xml:"Response"`
+		APIVersion string   `xml:"APIVersion,attr"`
+		Login      struct {
 			Status string `xml:"status"`
 		} `xml:"Login"`
 		FirewallRule []FirewallRule `xml:"FirewallRule"`
@@ -106,7 +121,7 @@ func (c *Client) ReadFirewallRule(name string) (*FirewallRule, error) {
 			Code    string `xml:"code,attr"`
 			Message string `xml:",chardata"`
 		} `xml:"Status"`
-		Error        struct {
+		Error struct {
 			Code    string `xml:"code,attr"`
 			Message string `xml:",chardata"`
 		} `xml:"Error"`
@@ -128,26 +143,26 @@ func (c *Client) ReadFirewallRule(name string) (*FirewallRule, error) {
 	}
 
 	// Find the correct rule by name
-    var foundRule *FirewallRule
-    for i := range response.FirewallRule {
-        if response.FirewallRule[i].Name == name {
-            foundRule = &response.FirewallRule[i]
-            break
-        }
-    }
+	var foundRule *FirewallRule
+	for i := range response.FirewallRule {
+		if response.FirewallRule[i].Name == name {
+			foundRule = &response.FirewallRule[i]
+			break
+		}
+	}
 
-    // Return the found FirewallRule or nil if not found
-    if foundRule != nil {
-        return foundRule, nil
-    }
+	// Return the found FirewallRule or nil if not found
+	if foundRule != nil {
+		return foundRule, nil
+	}
 
-    // If we get here, the specific FirewallRule wasn't found in the list
-    return nil, nil // Or potentially return an error if finding 0 is unexpected
+	// If we get here, the specific FirewallRule wasn't found in the list
+	return nil, nil // Or potentially return an error if finding 0 is unexpected
 }
 
 // UpdateIPHost updates an existing IP Host.
 func (c *Client) UpdateFirewallRule(rule *FirewallRule) error {
-    // For update, we need to use <Set operation="update">
+	// For update, we need to use <Set operation="update">
 	request := common.RequestXML{
 		XMLName: xml.Name{Local: "Request"},
 		Login: common.LoginXML{
@@ -155,203 +170,205 @@ func (c *Client) UpdateFirewallRule(rule *FirewallRule) error {
 			Password: c.BaseClient.Password,
 		},
 		Set: firewallRuleSetXML{
-			Operation: "update",
-			FirewallRules:   []*FirewallRule{rule}, 
+			Operation:     "update",
+			FirewallRules: []*FirewallRule{rule},
 		},
 	}
 
-    // Set empty transaction ID as per requirement
-    rule.TransactionID = ""
+	// Set empty transaction ID as per requirement
+	rule.TransactionID = ""
 
-    xmlData, err := xml.MarshalIndent(request, "", "  ")
-    if err != nil {
-        return fmt.Errorf("error marshaling XML API request for update: %v", err)
-    }
+	xmlData, err := xml.MarshalIndent(request, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling XML API request for update: %v", err)
+	}
 
-    fmt.Printf("Firewall rule client.go update XML Update Request:\n%s\n", string(xmlData))
-    tempFileName, err := common.CreateTempFile(xmlData)
-    if err != nil {
-        return fmt.Errorf("error creating temporary file for update: %v", err)
-    }
-    defer os.Remove(tempFileName)
+	fmt.Printf("Firewall rule client.go update XML Update Request:\n%s\n", string(xmlData))
+	tempFileName, err := common.CreateTempFile(xmlData)
+	if err != nil {
+		return fmt.Errorf("error creating temporary file for update: %v", err)
+	}
+	defer os.Remove(tempFileName)
 
-    // Create a temporary file for the response
-    responseTempFile, err := os.CreateTemp("", "sophos_response")
-    if err != nil {
-        return fmt.Errorf("error creating response temporary file for update: %v", err)
-    }
-    responseTempFileName := responseTempFile.Name()
-    responseTempFile.Close() // Close it now so curl can write to it
-    defer os.Remove(responseTempFileName)
+	// Create a temporary file for the response
+	responseTempFile, err := os.CreateTemp("", "sophos_response")
+	if err != nil {
+		return fmt.Errorf("error creating response temporary file for update: %v", err)
+	}
+	responseTempFileName := responseTempFile.Name()
+	responseTempFile.Close() // Close it now so curl can write to it
+	defer os.Remove(responseTempFileName)
 
-    url := fmt.Sprintf("%s/webconsole/APIController", c.BaseClient.Endpoint)
+	url := fmt.Sprintf("%s/webconsole/APIController", c.BaseClient.Endpoint)
 
-    // Construct the curl command using the correct syntax for the file
-    cmd := exec.Command("curl",
-        "-k", // Insecure (as per user request)
-        url,
-        "-F", fmt.Sprintf("reqxml=<%s", tempFileName), // Use < instead of @
-        "-o", responseTempFileName, // Output response to a file
-    )
+	// Construct the curl command using the correct syntax for the file
+	cmd := exec.Command("curl",
+		"-k", // Insecure (as per user request)
+		url,
+		"-F", fmt.Sprintf("reqxml=<%s", tempFileName), // Use < instead of @
+		"-o", responseTempFileName, // Output response to a file
+	)
 
-    var errb bytes.Buffer
-    cmd.Stderr = &errb
+	var errb bytes.Buffer
+	cmd.Stderr = &errb
 
-    err = cmd.Run()
-    if err != nil {
-        return fmt.Errorf("error executing curl for update: %v, stderr: %s", err, errb.String())
-    }
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error executing curl for update: %v, stderr: %s", err, errb.String())
+	}
 
-    // Read the response from the file
-    responseData, err := os.ReadFile(responseTempFileName)
-    if err != nil {
-        return fmt.Errorf("error reading response file for update: %v", err)
-    }
-    
-    responseBody := string(responseData)
-    fmt.Printf("API Update Response: %s\n", responseBody)
+	// Read the response from the file
+	responseData, err := os.ReadFile(responseTempFileName)
+	if err != nil {
+		return fmt.Errorf("error reading response file for update: %v", err)
+	}
 
-    // Parse the response to check for errors
-    var response struct {
-        XMLName   xml.Name `xml:"Response"`
-        APIVersion string `xml:"APIVersion,attr"`
-        Login     struct {
-            Status string `xml:"status"`
-        } `xml:"Login"`
-        FirewallRule  struct {
-            Status struct {
-                Code    string `xml:"code,attr"`
-                Message string `xml:",chardata"`
-            } `xml:"Status"`
-        } `xml:"FirewallRule"`
-        Error     struct {
-            Code    string `xml:"code,attr"`
-            Message string `xml:",chardata"`
-        } `xml:"Error"`
-    }
+	responseBody := string(responseData)
+	fmt.Printf("API Update Response: %s\n", responseBody)
 
-    err = xml.Unmarshal(responseData, &response)
-    if err != nil {
-        return fmt.Errorf("error unmarshaling update response: %v", err)
-    }
+	// Parse the response to check for errors
+	var response struct {
+		XMLName    xml.Name `xml:"Response"`
+		APIVersion string   `xml:"APIVersion,attr"`
+		Login      struct {
+			Status string `xml:"status"`
+		} `xml:"Login"`
+		FirewallRule struct {
+			Status struct {
+				Code    string `xml:"code,attr"`
+				Message string `xml:",chardata"`
+			} `xml:"Status"`
+		} `xml:"FirewallRule"`
+		Error struct {
+			Code    string `xml:"code,attr"`
+			Message string `xml:",chardata"`
+		} `xml:"Error"`
+	}
 
-    // Check login status
-    if response.Login.Status != "Authentication Successful" {
-        return fmt.Errorf("authentication failed for update: %s", response.Login.Status)
-    }
+	err = xml.Unmarshal(responseData, &response)
+	if err != nil {
+		return fmt.Errorf("error unmarshaling update response: %v", err)
+	}
 
-    // Check for API errors
-    if response.Error.Code != "" {
-        return fmt.Errorf("Sophos API error during update: %s - %s", response.Error.Code, response.Error.Message)
-    }
+	// Check login status
+	if response.Login.Status != "Authentication Successful" {
+		return fmt.Errorf("authentication failed for update: %s", response.Login.Status)
+	}
 
-    return nil
+	// Check for API errors
+	if response.Error.Code != "" {
+		return fmt.Errorf("Sophos API error during update: %s - %s", response.Error.Code, response.Error.Message)
+	}
+
+	return nil
 }
 
 // DeleteIPHost deletes an IP Host.
 func (c *Client) DeleteFirewallRule(name string) error {
-    // For deletion, we need to use the <Remove> tag instead of <Set>
-    // Format the request to match the expected structure
-    requestBody := fmt.Sprintf(`<Request>
-   <Login>
-        <Username>%s</Username>
-        <Password>%s</Password>
-    </Login>
-    <Remove>
-        <FirewallRule>
-            <Name>%s</Name>
-        </FirewallRule>
-    </Remove>
-</Request>`, c.BaseClient.Username, c.BaseClient.Password, name)
+	request := common.RequestXML{
+		XMLName: xml.Name{Local: "Request"},
+		Login: common.LoginXML{
+			Username: c.BaseClient.Username,
+			Password: c.BaseClient.Password,
+		},
+		Remove: removeFirewallRuleBlockXML{
+			FirewallRule: firewallRuleNameXML{Name: name},
+		},
+	}
 
-    // Create a temporary file with the request content
-    tempFileName, err := common.CreateTempFile([]byte(requestBody))
-    if err != nil {
-        return fmt.Errorf("error creating temporary file for delete: %v", err)
-    }
-    defer os.Remove(tempFileName)
+	xmlData, err := xml.MarshalIndent(request, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling XML API delete request: %v", err)
+	}
 
-    // Create a temporary file for the response
-    responseTempFile, err := os.CreateTemp("", "sophos_response")
-    if err != nil {
-        return fmt.Errorf("error creating response temporary file: %v", err)
-    }
-    responseTempFileName := responseTempFile.Name()
-    responseTempFile.Close() // Close it now so curl can write to it
-    defer os.Remove(responseTempFileName)
+	// Create a temporary file with the request content
+	tempFileName, err := common.CreateTempFile(xmlData)
+	if err != nil {
+		return fmt.Errorf("error creating temporary file for delete: %v", err)
+	}
+	defer os.Remove(tempFileName)
 
-    url := fmt.Sprintf("%s/webconsole/APIController", c.BaseClient.Endpoint)
-    
-    // Execute curl command with the correct format
-    cmd := exec.Command("curl",
-        "-k",
-        url,
-        "-F", fmt.Sprintf("reqxml=<%s", tempFileName), // Note the < instead of @ for the file
-        "-o", responseTempFileName, // Output response to a file
-    )
-    
-    var outb, errb bytes.Buffer
-    cmd.Stdout = &outb
-    cmd.Stderr = &errb
+	// Create a temporary file for the response
+	responseTempFile, err := os.CreateTemp("", "sophos_response")
+	if err != nil {
+		return fmt.Errorf("error creating response temporary file: %v", err)
+	}
+	responseTempFileName := responseTempFile.Name()
+	responseTempFile.Close() // Close it now so curl can write to it
+	defer os.Remove(responseTempFileName)
 
-    err = cmd.Run()
-    if err != nil {
-        return fmt.Errorf("error executing curl for delete: %v, stderr: %s", err, errb.String())
-    }
+	url := fmt.Sprintf("%s/webconsole/APIController", c.BaseClient.Endpoint)
 
-    // Read the response from the file
-    responseData, err := os.ReadFile(responseTempFileName)
-    if err != nil {
-        return fmt.Errorf("error reading response file: %v", err)
-    }
-    
-    responseBody := string(responseData)
-    fmt.Printf("API Response for delete: %s\n", responseBody)
-    
-    // Check for empty response
-    if len(responseBody) == 0 {
-        return fmt.Errorf("received empty response from Sophos API")
-    }
+	// Execute curl command with the correct format
+	cmd := exec.Command("curl",
+		"-k",
+		url,
+		"-F", fmt.Sprintf("reqxml=<%s", tempFileName), // Note the < instead of @ for the file
+		"-o", responseTempFileName, // Output response to a file
+	)
 
-    // Parse the response XML to check for errors
-    var response struct {
-        XMLName   xml.Name `xml:"Response"`
-        APIVersion string `xml:"APIVersion,attr"`
-        Login     struct {
-            Status string `xml:"status"`
-        } `xml:"Login"`
-        Status    struct {
-            Code    string `xml:"code,attr"`
-            Message string `xml:",chardata"`
-        } `xml:"Status"`
-        Error     struct {
-            Code    string `xml:"code,attr"`
-            Message string `xml:",chardata"`
-        } `xml:"Error"`
-    }
+	var outb, errb bytes.Buffer
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
 
-    err = xml.Unmarshal(responseData, &response)
-    if err != nil {
-        return fmt.Errorf("error unmarshaling delete response: %v, body: %s", err, responseBody)
-    }
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error executing curl for delete: %v, stderr: %s", err, errb.String())
+	}
 
-    // Check login status
-    if response.Login.Status != "Authentication Successful" {
-        return fmt.Errorf("authentication failed: %s", response.Login.Status)
-    }
+	// Read the response from the file
+	responseData, err := os.ReadFile(responseTempFileName)
+	if err != nil {
+		return fmt.Errorf("error reading response file: %v", err)
+	}
 
-    // Check for API errors
-    if response.Error.Code != "" {
-        return fmt.Errorf("Sophos API error: %s - %s", response.Error.Code, response.Error.Message)
-    }
+	responseBody := string(responseData)
+	fmt.Printf("API Response for delete: %s\n", responseBody)
 
-    return nil
+	// Check for empty response
+	if len(responseBody) == 0 {
+		return fmt.Errorf("received empty response from Sophos API")
+	}
+
+	// Parse the response XML to check for errors
+	var response struct {
+		XMLName    xml.Name `xml:"Response"`
+		APIVersion string   `xml:"APIVersion,attr"`
+		Login      struct {
+			Status string `xml:"status"`
+		} `xml:"Login"`
+		Status struct {
+			Code    string `xml:"code,attr"`
+			Message string `xml:",chardata"`
+		} `xml:"Status"`
+		Error struct {
+			Code    string `xml:"code,attr"`
+			Message string `xml:",chardata"`
+		} `xml:"Error"`
+	}
+
+	err = xml.Unmarshal(responseData, &response)
+	if err != nil {
+		return fmt.Errorf("error unmarshaling delete response: %v, body: %s", err, responseBody)
+	}
+
+	// Check login status
+	if response.Login.Status != "Authentication Successful" {
+		return fmt.Errorf("authentication failed: %s", response.Login.Status)
+	}
+
+	// Check for API errors
+	if response.Error.Code != "" {
+		return fmt.Errorf("Sophos API error: %s - %s", response.Error.Code, response.Error.Message)
+	}
+
+	return nil
 }
 
 // Bulk operation for firewall rules
 func (c *Client) createFirewallRulesBulk(rules []*FirewallRule, operation string) error {
 	fmt.Printf("Creating firewall rules with operation: %s\n", operation)
-	
+
 	request := common.RequestXML{
 		XMLName: xml.Name{Local: "Request"},
 		Login: common.LoginXML{
@@ -359,8 +376,8 @@ func (c *Client) createFirewallRulesBulk(rules []*FirewallRule, operation string
 			Password: c.BaseClient.Password,
 		},
 		Set: firewallRuleSetXML{
-			Operation: operation,
-			FirewallRules:   rules,
+			Operation:     operation,
+			FirewallRules: rules,
 		},
 	}
 
@@ -408,15 +425,15 @@ func (c *Client) createFirewallRulesBulk(rules []*FirewallRule, operation string
 	if err != nil {
 		return fmt.Errorf("error reading response file: %v", err)
 	}
-	
+
 	responseBody := string(responseData)
 	fmt.Printf("API Response: %s\n", responseBody)
 
 	// Parse the response to check for errors
 	var response struct {
-		XMLName   xml.Name `xml:"Response"`
-		APIVersion string `xml:"APIVersion,attr"`
-		Login     struct {
+		XMLName    xml.Name `xml:"Response"`
+		APIVersion string   `xml:"APIVersion,attr"`
+		Login      struct {
 			Status string `xml:"status"`
 		} `xml:"Login"`
 		FirewallRule struct {
@@ -425,7 +442,7 @@ func (c *Client) createFirewallRulesBulk(rules []*FirewallRule, operation string
 				Message string `xml:",chardata"`
 			} `xml:"Status"`
 		} `xml:"FirewallRule"`
-		Error     struct {
+		Error struct {
 			Code    string `xml:"code,attr"`
 			Message string `xml:",chardata"`
 		} `xml:"Error"`

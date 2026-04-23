@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"github.com/jubinaghara/terraform-provider-sophosfirewall/internal/common"
 	"os"
 	"os/exec"
-	"github.com/jubinaghara/terraform-provider-sophosfirewall/internal/common"
 )
 
 type Client struct {
@@ -25,6 +25,18 @@ type setIPHostBlockXML struct {
 	IPHosts   []*IPHost `xml:"IPHost"`
 }
 
+type ipHostNameXML struct {
+	Name string `xml:"Name"`
+}
+
+type getIPHostBlockXML struct {
+	IPHost ipHostNameXML `xml:"IPHost"`
+}
+
+type removeIPHostBlockXML struct {
+	IPHost ipHostNameXML `xml:"IPHost"`
+}
+
 // CreateIPHost implements single IP host creation
 func (c *Client) CreateIPHost(ipHost *IPHost) error {
 	fmt.Printf("Creating IPHost with name: %s\n", ipHost.Name)
@@ -36,7 +48,7 @@ func (c *Client) CreateIPHost(ipHost *IPHost) error {
 		},
 		Set: setIPHostBlockXML{
 			Operation: "add",
-			IPHosts:   []*IPHost{ipHost}, 
+			IPHosts:   []*IPHost{ipHost},
 		},
 	}
 
@@ -67,7 +79,7 @@ func (c *Client) CreateIPHost(ipHost *IPHost) error {
 	cmd := exec.Command("curl",
 		"-k", // Insecure (as per user request)
 		url,
-		"-F", fmt.Sprintf("reqxml=<%s", tempFileName), // Use < instead of @ 
+		"-F", fmt.Sprintf("reqxml=<%s", tempFileName), // Use < instead of @
 		"-o", responseTempFileName, // Output response to a file
 	)
 
@@ -84,7 +96,7 @@ func (c *Client) CreateIPHost(ipHost *IPHost) error {
 	if err != nil {
 		return fmt.Errorf("error reading response file: %v", err)
 	}
-	
+
 	responseBody := string(responseData)
 	fmt.Printf("API Response: %s\n", responseBody)
 
@@ -95,13 +107,13 @@ func (c *Client) CreateIPHost(ipHost *IPHost) error {
 		Login      struct {
 			Status string `xml:"status"`
 		} `xml:"Login"`
-		IPHost     struct {
+		IPHost struct {
 			Status struct {
 				Code    string `xml:"code,attr"`
 				Message string `xml:",chardata"`
 			} `xml:"Status"`
 		} `xml:"IPHost"`
-		Error      struct {
+		Error struct {
 			Code    string `xml:"code,attr"`
 			Message string `xml:",chardata"`
 		} `xml:"Error"`
@@ -132,26 +144,29 @@ func (c *Client) CreateIPHost(ipHost *IPHost) error {
 
 // ReadIPHost implements IP host reading
 func (c *Client) ReadIPHost(name string) (*IPHost, error) {
-	// Format the request to match the expected structure
-	requestBody := fmt.Sprintf(`<Request>
-	<Login>
-		<Username>%s</Username>
-		<Password>%s</Password>
-	</Login>
-	<Get> 
-		<IPHost>
-			<Name>%s</Name>
-		</IPHost>
-	</Get>
-</Request>`, c.BaseClient.Username, c.BaseClient.Password, name)
-   
+	request := common.RequestXML{
+		XMLName: xml.Name{Local: "Request"},
+		Login: common.LoginXML{
+			Username: c.BaseClient.Username,
+			Password: c.BaseClient.Password,
+		},
+		Get: getIPHostBlockXML{
+			IPHost: ipHostNameXML{Name: name},
+		},
+	}
+
+	xmlData, err := xml.MarshalIndent(request, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling XML API read request: %v", err)
+	}
+
 	// Create a temporary file with the request content
-	tempFileName, err := common.CreateTempFile([]byte(requestBody))
+	tempFileName, err := common.CreateTempFile(xmlData)
 	if err != nil {
 		return nil, fmt.Errorf("error creating temporary file for read: %v", err)
 	}
 	defer os.Remove(tempFileName)
-   
+
 	// Create a temporary file for the response
 	responseTempFile, err := os.CreateTemp("", "sophos_response")
 	if err != nil {
@@ -160,9 +175,9 @@ func (c *Client) ReadIPHost(name string) (*IPHost, error) {
 	responseTempFileName := responseTempFile.Name()
 	responseTempFile.Close() // Close it now so curl can write to it
 	defer os.Remove(responseTempFileName)
-   
+
 	url := fmt.Sprintf("%s/webconsole/APIController", c.BaseClient.Endpoint)
-	
+
 	// Execute curl command with the correct format
 	cmd := exec.Command("curl",
 		"-k",
@@ -170,62 +185,62 @@ func (c *Client) ReadIPHost(name string) (*IPHost, error) {
 		"-F", fmt.Sprintf("reqxml=<%s", tempFileName),
 		"-o", responseTempFileName,
 	)
-	
+
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
-   
+
 	err = cmd.Run()
 	if err != nil {
 		return nil, fmt.Errorf("error executing curl for read: %v, stderr: %s", err, errb.String())
 	}
-   
+
 	// Read the response from the file
 	responseData, err := os.ReadFile(responseTempFileName)
 	if err != nil {
 		return nil, fmt.Errorf("error reading response file: %v", err)
 	}
-	
+
 	responseBody := string(responseData)
-	
+
 	// Check for empty response
 	if len(responseBody) == 0 {
 		return nil, fmt.Errorf("received empty response from Sophos API")
 	}
-   
+
 	// Parse the response XML
 	var response struct {
-		XMLName   xml.Name `xml:"Response"`
-		APIVersion string `xml:"APIVersion,attr"`
-		Login     struct {
+		XMLName    xml.Name `xml:"Response"`
+		APIVersion string   `xml:"APIVersion,attr"`
+		Login      struct {
 			Status string `xml:"status"`
 		} `xml:"Login"`
-		IPHosts    []IPHost `xml:"IPHost"` // Changed to slice to handle multiple hosts
-		Status    struct {
+		IPHosts []IPHost `xml:"IPHost"` // Changed to slice to handle multiple hosts
+		Status  struct {
 			Code    string `xml:"code,attr"`
 			Message string `xml:",chardata"`
 		} `xml:"Status"`
-		Error     struct {
+		Error struct {
 			Code    string `xml:"code,attr"`
 			Message string `xml:",chardata"`
 		} `xml:"Error"`
 	}
-   
+
 	err = xml.Unmarshal(responseData, &response)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshaling read XML API response: %v, body: %s", err, responseBody)
 	}
-   
+
 	// Check login status
 	if response.Login.Status != "Authentication Successful" {
 		return nil, fmt.Errorf("authentication failed: %s", response.Login.Status)
 	}
-   
+
 	// Check for API errors
 	if response.Error.Code != "" {
 		return nil, fmt.Errorf("Sophos API error: %s - %s", response.Error.Code, response.Error.Message)
 	}
-   
+
 	// Find the IPHost with the matching name
 	var targetIPHost *IPHost
 	for i := range response.IPHosts {
@@ -236,7 +251,7 @@ func (c *Client) ReadIPHost(name string) (*IPHost, error) {
 			break
 		}
 	}
-   
+
 	// Return the IPHost if found
 	if targetIPHost != nil {
 		// Handle HostGroupList properly
@@ -246,13 +261,13 @@ func (c *Client) ReadIPHost(name string) (*IPHost, error) {
 			for _, group := range targetIPHost.HostGroupList.HostGroups {
 				uniqueGroups[group] = true
 			}
-			
+
 			// Convert back to slice
 			deduplicatedGroups := make([]string, 0, len(uniqueGroups))
 			for group := range uniqueGroups {
 				deduplicatedGroups = append(deduplicatedGroups, group)
 			}
-			
+
 			// Update the host groups list
 			targetIPHost.HostGroupList.HostGroups = deduplicatedGroups
 		} else {
@@ -261,7 +276,7 @@ func (c *Client) ReadIPHost(name string) (*IPHost, error) {
 				HostGroups: []string{},
 			}
 		}
-		
+
 		// Normalize fields based on host type to prevent state drift
 		switch targetIPHost.HostType {
 		case "IP":
@@ -290,10 +305,10 @@ func (c *Client) ReadIPHost(name string) (*IPHost, error) {
 			targetIPHost.EndIPAddress = ""
 			targetIPHost.ListOfIPAddresses = ""
 		}
-		
+
 		return targetIPHost, nil
 	}
-   
+
 	// If we get here, the IPHost wasn't found
 	return nil, nil
 }
@@ -308,194 +323,196 @@ func (c *Client) UpdateIPHost(ipHost *IPHost) error {
 		},
 		Set: setIPHostBlockXML{
 			Operation: "update",
-			IPHosts:   []*IPHost{ipHost}, 
+			IPHosts:   []*IPHost{ipHost},
 		},
 	}
 
-    // Set empty transaction ID as per requirement
-    ipHost.TransactionID = ""
+	// Set empty transaction ID as per requirement
+	ipHost.TransactionID = ""
 
-    xmlData, err := xml.MarshalIndent(request, "", "  ")
-    if err != nil {
-        return fmt.Errorf("error marshaling XML API request for update: %v", err)
-    }
+	xmlData, err := xml.MarshalIndent(request, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling XML API request for update: %v", err)
+	}
 
-    fmt.Printf("XML Update Request:\n%s\n", string(xmlData))
-    tempFileName, err := common.CreateTempFile(xmlData)
-    if err != nil {
-        return fmt.Errorf("error creating temporary file for update: %v", err)
-    }
-    defer os.Remove(tempFileName)
+	fmt.Printf("XML Update Request:\n%s\n", string(xmlData))
+	tempFileName, err := common.CreateTempFile(xmlData)
+	if err != nil {
+		return fmt.Errorf("error creating temporary file for update: %v", err)
+	}
+	defer os.Remove(tempFileName)
 
-    // Create a temporary file for the response
-    responseTempFile, err := os.CreateTemp("", "sophos_response")
-    if err != nil {
-        return fmt.Errorf("error creating response temporary file for update: %v", err)
-    }
-    responseTempFileName := responseTempFile.Name()
-    responseTempFile.Close() // Close it now so curl can write to it
-    defer os.Remove(responseTempFileName)
+	// Create a temporary file for the response
+	responseTempFile, err := os.CreateTemp("", "sophos_response")
+	if err != nil {
+		return fmt.Errorf("error creating response temporary file for update: %v", err)
+	}
+	responseTempFileName := responseTempFile.Name()
+	responseTempFile.Close() // Close it now so curl can write to it
+	defer os.Remove(responseTempFileName)
 
-    url := fmt.Sprintf("%s/webconsole/APIController", c.BaseClient.Endpoint)
+	url := fmt.Sprintf("%s/webconsole/APIController", c.BaseClient.Endpoint)
 
-    // Construct the curl command using the correct syntax for the file
-    cmd := exec.Command("curl",
-        "-k", // Insecure (as per user request)
-        url,
-        "-F", fmt.Sprintf("reqxml=<%s", tempFileName), // Use < instead of @
-        "-o", responseTempFileName, // Output response to a file
-    )
+	// Construct the curl command using the correct syntax for the file
+	cmd := exec.Command("curl",
+		"-k", // Insecure (as per user request)
+		url,
+		"-F", fmt.Sprintf("reqxml=<%s", tempFileName), // Use < instead of @
+		"-o", responseTempFileName, // Output response to a file
+	)
 
-    var errb bytes.Buffer
-    cmd.Stderr = &errb
+	var errb bytes.Buffer
+	cmd.Stderr = &errb
 
-    err = cmd.Run()
-    if err != nil {
-        return fmt.Errorf("error executing curl for update: %v, stderr: %s", err, errb.String())
-    }
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error executing curl for update: %v, stderr: %s", err, errb.String())
+	}
 
-    // Read the response from the file
-    responseData, err := os.ReadFile(responseTempFileName)
-    if err != nil {
-        return fmt.Errorf("error reading response file for update: %v", err)
-    }
-    
-    responseBody := string(responseData)
-    fmt.Printf("API Update Response: %s\n", responseBody)
+	// Read the response from the file
+	responseData, err := os.ReadFile(responseTempFileName)
+	if err != nil {
+		return fmt.Errorf("error reading response file for update: %v", err)
+	}
 
-    // Parse the response to check for errors
-    var response struct {
-        XMLName   xml.Name `xml:"Response"`
-        APIVersion string `xml:"APIVersion,attr"`
-        Login     struct {
-            Status string `xml:"status"`
-        } `xml:"Login"`
-        IPHost    struct {
-            Status struct {
-                Code    string `xml:"code,attr"`
-                Message string `xml:",chardata"`
-            } `xml:"Status"`
-        } `xml:"IPHost"`
-        Error     struct {
-            Code    string `xml:"code,attr"`
-            Message string `xml:",chardata"`
-        } `xml:"Error"`
-    }
+	responseBody := string(responseData)
+	fmt.Printf("API Update Response: %s\n", responseBody)
 
-    err = xml.Unmarshal(responseData, &response)
-    if err != nil {
-        return fmt.Errorf("error unmarshaling update response: %v", err)
-    }
+	// Parse the response to check for errors
+	var response struct {
+		XMLName    xml.Name `xml:"Response"`
+		APIVersion string   `xml:"APIVersion,attr"`
+		Login      struct {
+			Status string `xml:"status"`
+		} `xml:"Login"`
+		IPHost struct {
+			Status struct {
+				Code    string `xml:"code,attr"`
+				Message string `xml:",chardata"`
+			} `xml:"Status"`
+		} `xml:"IPHost"`
+		Error struct {
+			Code    string `xml:"code,attr"`
+			Message string `xml:",chardata"`
+		} `xml:"Error"`
+	}
 
-    // Check login status
-    if response.Login.Status != "Authentication Successful" {
-        return fmt.Errorf("authentication failed for update: %s", response.Login.Status)
-    }
+	err = xml.Unmarshal(responseData, &response)
+	if err != nil {
+		return fmt.Errorf("error unmarshaling update response: %v", err)
+	}
 
-    // Check for API errors
-    if response.Error.Code != "" {
-        return fmt.Errorf("Sophos API error during update: %s - %s", response.Error.Code, response.Error.Message)
-    }
+	// Check login status
+	if response.Login.Status != "Authentication Successful" {
+		return fmt.Errorf("authentication failed for update: %s", response.Login.Status)
+	}
 
-    return nil
+	// Check for API errors
+	if response.Error.Code != "" {
+		return fmt.Errorf("Sophos API error during update: %s - %s", response.Error.Code, response.Error.Message)
+	}
+
+	return nil
 }
 
 // DeleteIPHost implements IP host deletion
 func (c *Client) DeleteIPHost(name string) error {
-    // For deletion, we need to use the <Remove> tag instead of <Set>
-    // Format the request to match the expected structure
-    requestBody := fmt.Sprintf(`<Request>
-   <Login>
-        <Username>%s</Username>
-        <Password>%s</Password>
-    </Login>
-    <Remove>
-        <IPHost>
-            <Name>%s</Name>
-        </IPHost>
-    </Remove>
-</Request>`, c.BaseClient.Username, c.BaseClient.Password, name)
+	request := common.RequestXML{
+		XMLName: xml.Name{Local: "Request"},
+		Login: common.LoginXML{
+			Username: c.BaseClient.Username,
+			Password: c.BaseClient.Password,
+		},
+		Remove: removeIPHostBlockXML{
+			IPHost: ipHostNameXML{Name: name},
+		},
+	}
 
-    // Create a temporary file with the request content
-    tempFileName, err := common.CreateTempFile([]byte(requestBody))
-    if err != nil {
-        return fmt.Errorf("error creating temporary file for delete: %v", err)
-    }
-    defer os.Remove(tempFileName)
+	xmlData, err := xml.MarshalIndent(request, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling XML API delete request: %v", err)
+	}
 
-    // Create a temporary file for the response
-    responseTempFile, err := os.CreateTemp("", "sophos_response")
-    if err != nil {
-        return fmt.Errorf("error creating response temporary file: %v", err)
-    }
-    responseTempFileName := responseTempFile.Name()
-    responseTempFile.Close() // Close it now so curl can write to it
-    defer os.Remove(responseTempFileName)
+	// Create a temporary file with the request content
+	tempFileName, err := common.CreateTempFile(xmlData)
+	if err != nil {
+		return fmt.Errorf("error creating temporary file for delete: %v", err)
+	}
+	defer os.Remove(tempFileName)
 
-    url := fmt.Sprintf("%s/webconsole/APIController", c.BaseClient.Endpoint)
-    
-    // Execute curl command with the correct format
-    cmd := exec.Command("curl",
-        "-k",
-        url,
-        "-F", fmt.Sprintf("reqxml=<%s", tempFileName), // Note the < instead of @ for the file
-        "-o", responseTempFileName, // Output response to a file
-    )
-    
-    var outb, errb bytes.Buffer
-    cmd.Stdout = &outb
-    cmd.Stderr = &errb
+	// Create a temporary file for the response
+	responseTempFile, err := os.CreateTemp("", "sophos_response")
+	if err != nil {
+		return fmt.Errorf("error creating response temporary file: %v", err)
+	}
+	responseTempFileName := responseTempFile.Name()
+	responseTempFile.Close() // Close it now so curl can write to it
+	defer os.Remove(responseTempFileName)
 
-    err = cmd.Run()
-    if err != nil {
-        return fmt.Errorf("error executing curl for delete: %v, stderr: %s", err, errb.String())
-    }
+	url := fmt.Sprintf("%s/webconsole/APIController", c.BaseClient.Endpoint)
 
-    // Read the response from the file
-    responseData, err := os.ReadFile(responseTempFileName)
-    if err != nil {
-        return fmt.Errorf("error reading response file: %v", err)
-    }
-    
-    responseBody := string(responseData)
-    fmt.Printf("API Response for delete: %s\n", responseBody)
-    
-    // Check for empty response
-    if len(responseBody) == 0 {
-        return fmt.Errorf("received empty response from Sophos API")
-    }
+	// Execute curl command with the correct format
+	cmd := exec.Command("curl",
+		"-k",
+		url,
+		"-F", fmt.Sprintf("reqxml=<%s", tempFileName), // Note the < instead of @ for the file
+		"-o", responseTempFileName, // Output response to a file
+	)
 
-    // Parse the response XML to check for errors
-    var response struct {
-        XMLName   xml.Name `xml:"Response"`
-        APIVersion string `xml:"APIVersion,attr"`
-        Login     struct {
-            Status string `xml:"status"`
-        } `xml:"Login"`
-        Status    struct {
-            Code    string `xml:"code,attr"`
-            Message string `xml:",chardata"`
-        } `xml:"Status"`
-        Error     struct {
-            Code    string `xml:"code,attr"`
-            Message string `xml:",chardata"`
-        } `xml:"Error"`
-    }
+	var outb, errb bytes.Buffer
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
 
-    err = xml.Unmarshal(responseData, &response)
-    if err != nil {
-        return fmt.Errorf("error unmarshaling delete response: %v, body: %s", err, responseBody)
-    }
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error executing curl for delete: %v, stderr: %s", err, errb.String())
+	}
 
-    // Check login status
-    if response.Login.Status != "Authentication Successful" {
-        return fmt.Errorf("authentication failed: %s", response.Login.Status)
-    }
+	// Read the response from the file
+	responseData, err := os.ReadFile(responseTempFileName)
+	if err != nil {
+		return fmt.Errorf("error reading response file: %v", err)
+	}
 
-    // Check for API errors
-    if response.Error.Code != "" {
-        return fmt.Errorf("Sophos API error: %s - %s", response.Error.Code, response.Error.Message)
-    }
+	responseBody := string(responseData)
+	fmt.Printf("API Response for delete: %s\n", responseBody)
 
-    return nil
+	// Check for empty response
+	if len(responseBody) == 0 {
+		return fmt.Errorf("received empty response from Sophos API")
+	}
+
+	// Parse the response XML to check for errors
+	var response struct {
+		XMLName    xml.Name `xml:"Response"`
+		APIVersion string   `xml:"APIVersion,attr"`
+		Login      struct {
+			Status string `xml:"status"`
+		} `xml:"Login"`
+		Status struct {
+			Code    string `xml:"code,attr"`
+			Message string `xml:",chardata"`
+		} `xml:"Status"`
+		Error struct {
+			Code    string `xml:"code,attr"`
+			Message string `xml:",chardata"`
+		} `xml:"Error"`
+	}
+
+	err = xml.Unmarshal(responseData, &response)
+	if err != nil {
+		return fmt.Errorf("error unmarshaling delete response: %v, body: %s", err, responseBody)
+	}
+
+	// Check login status
+	if response.Login.Status != "Authentication Successful" {
+		return fmt.Errorf("authentication failed: %s", response.Login.Status)
+	}
+
+	// Check for API errors
+	if response.Error.Code != "" {
+		return fmt.Errorf("Sophos API error: %s - %s", response.Error.Code, response.Error.Message)
+	}
+
+	return nil
 }

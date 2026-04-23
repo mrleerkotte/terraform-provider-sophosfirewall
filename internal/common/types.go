@@ -2,6 +2,7 @@ package common
 
 import (
 	"crypto/tls"
+	"encoding/xml"
 	"net/http"
 )
 
@@ -31,7 +32,7 @@ func NewBaseClient(endpoint, username, password string, insecure bool) *BaseClie
 
 // XML API request structures - common to all clients
 type RequestXML struct {
-	XMLName interface{} `xml:"Request"`
+	XMLName xml.Name    `xml:"Request"`
 	Login   LoginXML    `xml:"Login"`
 	Set     interface{} `xml:"Set,omitempty"`
 	Get     interface{} `xml:"Get,omitempty"`
