@@ -1,3 +1,5 @@
 /releases
-
+/dist/
+/terraform-provider-sophosfirewall
+/terraform-provider-sophosfirewall_*
 
