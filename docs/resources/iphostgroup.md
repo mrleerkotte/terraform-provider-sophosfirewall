@@ -5,16 +5,16 @@ description: |-
   Manages a Sophos IP Host Group object.
 ---
 
-# Resource: sophos_iphost
+# Resource: sophosfirewall_iphostgroup
 
-Manages a Sophos IP Host Group object. This resource allows you to create, update, and delete IP Host entries in your Sophos firewall.
+Manages a Sophos IP Host Group object. This resource allows you to create, update, and delete IP Host Group entries in your Sophos firewall.
 
 ## Example Usage for Single IP address
 
 ```hcl
-resource "sophosfirewall_iphostgroup" "example-host-group" {
-  name       = "example-host-group"
-  ip_family  = "IPv4"
+resource "sophosfirewall_iphostgroup" "example_host_group" {
+  name      = "example-host-group"
+  ip_family = "IPv4"
   host_list = ["testHG"]
 }
 ```
@@ -23,14 +23,14 @@ resource "sophosfirewall_iphostgroup" "example-host-group" {
 
 The following arguments are supported:
 
-* `name` - (Required) Name of the IP Host.
+* `name` - (Required) Name of the IP Host Group.
 * `ip_family` - (Required) IPv4 or IPv6
-* `description` - (Optional) Description of the IP Host.
+* `description` - (Optional) Description of the IP Host Group.
 
 ## Import
 
-IP Hosts can be imported using the name, e.g.,
+IP Host Groups can be imported using the name, e.g.,
 
 ```
-$ terraform import sophosfirewall_iphost.webserver WebServer01
+$ terraform import sophosfirewall_iphostgroup.example_host_group example-host-group
 ```

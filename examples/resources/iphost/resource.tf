@@ -8,9 +8,9 @@ resource "sophosfirewall_iphost" "single_ip" {
 
 # IP Range example
 resource "sophosfirewall_iphost" "ip_range" {
-  name            = "dhcp_clients"
-  ip_family       = "IPv4"
-  host_type       = "IPRange"
+  name             = "dhcp_clients"
+  ip_family        = "IPv4"
+  host_type        = "IPRange"
   start_ip_address = "192.168.1.100"
   end_ip_address   = "192.168.1.200"
 }

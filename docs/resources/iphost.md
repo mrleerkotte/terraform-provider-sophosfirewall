@@ -5,7 +5,7 @@ description: |-
   Manages a Sophos IP Host object.
 ---
 
-# Resource: sophos_iphost
+# Resource: sophosfirewall_iphost
 
 Manages a Sophos IP Host object. This resource allows you to create, update, and delete IP Host entries in your Sophos firewall.
 
