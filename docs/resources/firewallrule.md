@@ -82,6 +82,7 @@ The following arguments are supported:
 * `skip_local_destined` - (Optional) Skip local destined (Enable or Disable). Defaults to Disable.
 * `source_zones` - (Required) List of source zones.
 * `destination_zones` - (Required) List of destination zones.
+  `["Any"]` is supported and is normalized to Sophos' implicit API form.
 * `schedule` - (Optional) Schedule name. Defaults to "".
 * `source_networks` - (Optional) List of source networks.
 * `destination_networks` - (Optional) List of destination networks.

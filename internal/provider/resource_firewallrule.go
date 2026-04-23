@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"strings"
 	// "os"
 	// "os/exec"
 	// "bytes"
@@ -656,7 +657,7 @@ func (r *firewallRuleResource) modelToAPIFirewallRule(model firewallRuleResource
 	}
 
 	// Source Zones
-	if len(model.SourceZones) > 0 {
+	if len(model.SourceZones) > 0 && !isAnyOnlyStringList(model.SourceZones) {
 		rule.NetworkPolicy.SourceZones = &firewallrule.ZoneList{
 			Zones: make([]string, 0, len(model.SourceZones)),
 		}
@@ -666,7 +667,7 @@ func (r *firewallRuleResource) modelToAPIFirewallRule(model firewallRuleResource
 	}
 
 	// Destination Zones
-	if len(model.DestinationZones) > 0 {
+	if len(model.DestinationZones) > 0 && !isAnyOnlyStringList(model.DestinationZones) {
 		rule.NetworkPolicy.DestinationZones = &firewallrule.ZoneList{
 			Zones: make([]string, 0, len(model.DestinationZones)),
 		}
@@ -866,5 +867,21 @@ func (r *firewallRuleResource) reconcileFirewallRuleState(actual firewallRuleRes
 		}
 	}
 
+	if isAnyOnlyStringList(expected.SourceZones) && len(actual.SourceZones) == 0 {
+		actual.SourceZones = []types.String{types.StringValue("Any")}
+	}
+
+	if isAnyOnlyStringList(expected.DestinationZones) && len(actual.DestinationZones) == 0 {
+		actual.DestinationZones = []types.String{types.StringValue("Any")}
+	}
+
 	return actual
+}
+
+func isAnyOnlyStringList(values []types.String) bool {
+	if len(values) != 1 || values[0].IsNull() || values[0].IsUnknown() {
+		return false
+	}
+
+	return strings.EqualFold(values[0].ValueString(), "Any")
 }
