@@ -199,6 +199,9 @@ func (r *firewallRuleResource) Schema(_ context.Context, _ resource.SchemaReques
 				Description: "Position (Top, Bottom, After, Before)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"policy_type": schema.StringAttribute{
 				Description: "Policy Type (Network)",
@@ -207,10 +210,16 @@ func (r *firewallRuleResource) Schema(_ context.Context, _ resource.SchemaReques
 			"after_rule": schema.StringAttribute{
 				Description: "Rule to position after (used when position is 'After')",
 				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"before_rule": schema.StringAttribute{
 				Description: "Rule to position before (used when position is 'Before')",
 				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"action": schema.StringAttribute{
 				Description: "Action (Accept, Reject, Drop)",
@@ -425,7 +434,7 @@ func (r *firewallRuleResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	// Update the state with the actual created rule
-	state := r.apiToModelFirewallRule(*createdRule)
+	state := r.reconcileFirewallRuleState(r.apiToModelFirewallRule(*createdRule), plan)
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
 }
@@ -453,7 +462,7 @@ func (r *firewallRuleResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	// Update the Terraform state
-	state = r.apiToModelFirewallRule(*rule)
+	state = r.reconcileFirewallRuleState(r.apiToModelFirewallRule(*rule), state)
 
 	// Save the updated state
 	diags = resp.State.Set(ctx, &state)
@@ -492,7 +501,7 @@ func (r *firewallRuleResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	// Update the state with the actual updated rule
-	state := r.apiToModelFirewallRule(*updatedRule)
+	state := r.reconcileFirewallRuleState(r.apiToModelFirewallRule(*updatedRule), plan)
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 }
@@ -840,4 +849,22 @@ func (r *firewallRuleResource) apiToModelFirewallRule(rule firewallrule.Firewall
 	}
 
 	return model
+}
+
+func (r *firewallRuleResource) reconcileFirewallRuleState(actual firewallRuleResourceModel, expected firewallRuleResourceModel) firewallRuleResourceModel {
+	if !expected.Position.IsNull() && expected.Position.ValueString() == "Bottom" {
+		actual.Position = types.StringValue("Bottom")
+		actual.AfterRule = types.StringNull()
+		actual.BeforeRule = types.StringNull()
+	}
+
+	if !expected.Position.IsNull() && expected.Position.ValueString() == "Before" {
+		actual.Position = types.StringValue("Before")
+		actual.AfterRule = types.StringNull()
+		if !expected.BeforeRule.IsNull() {
+			actual.BeforeRule = expected.BeforeRule
+		}
+	}
+
+	return actual
 }

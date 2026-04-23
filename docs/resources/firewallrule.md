@@ -73,10 +73,10 @@ The following arguments are supported:
 * `description` - (Optional) Description of the rule.
 * `ip_family` - (Optional) IP Family (IPv4 or IPv6). Defaults to IPv4.
 * `status` - (Optional) Status (Enable or Disable). Defaults to Enable.
-* `position` - (Optional) Position (Top, Bottom, After, Before). Where to position the rule.
+* `position` - (Optional) Position (Top, Bottom, After, Before). Where to position the rule. Changing this recreates the rule. When Sophos internally rewrites `Bottom` or `Before` to an equivalent `After` position, the provider preserves the configured intent in Terraform state.
 * `policy_type` - (Required) Policy Type (Network).
-* `after_rule` - (Optional) Rule to position after (used when position is 'After').
-* `before_rule` - (Optional) Rule to position before (used when position is 'Before').
+* `after_rule` - (Optional) Rule to position after (used when position is 'After'). Changing this recreates the rule.
+* `before_rule` - (Optional) Rule to position before (used when position is 'Before'). Changing this recreates the rule.
 * `action` - (Required) Action (Accept, Reject, Drop).
 * `log_traffic` - (Optional) Log traffic (Enable or Disable). Defaults to Disable.
 * `skip_local_destined` - (Optional) Skip local destined (Enable or Disable). Defaults to Disable.
