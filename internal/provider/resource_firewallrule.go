@@ -20,17 +20,17 @@ import (
 
 // FirewallRule represents a Sophos firewall rule with all available fields
 type FirewallRule struct {
-	XMLName             xml.Name        `xml:"FirewallRule"`
-	Name                string          `xml:"Name"`
-	Description         string          `xml:"Description"`
-	IPFamily            string          `xml:"IPFamily"`
-	Status              string          `xml:"Status"`
-	Position            string          `xml:"Position"`
-	PolicyType          string          `xml:"PolicyType"`
-	After               *RulePosition   `xml:"After,omitempty"`
-	Before              *RulePosition   `xml:"Before,omitempty"`
-	NetworkPolicy       *NetworkPolicy  `xml:"NetworkPolicy,omitempty"`
-	TransactionID       string          `xml:"transactionid,attr,omitempty"`
+	XMLName       xml.Name       `xml:"FirewallRule"`
+	Name          string         `xml:"Name"`
+	Description   string         `xml:"Description"`
+	IPFamily      string         `xml:"IPFamily"`
+	Status        string         `xml:"Status"`
+	Position      string         `xml:"Position"`
+	PolicyType    string         `xml:"PolicyType"`
+	After         *RulePosition  `xml:"After,omitempty"`
+	Before        *RulePosition  `xml:"Before,omitempty"`
+	NetworkPolicy *NetworkPolicy `xml:"NetworkPolicy,omitempty"`
+	TransactionID string         `xml:"transactionid,attr,omitempty"`
 }
 
 // RulePosition specifies the position relative to another rule
@@ -40,37 +40,38 @@ type RulePosition struct {
 
 // NetworkPolicy contains network policy settings with all available fields
 type NetworkPolicy struct {
-	Action                       string            `xml:"Action"`
-	LogTraffic                   string            `xml:"LogTraffic"`
-	SkipLocalDestined            string            `xml:"SkipLocalDestined"`
-	Schedule                     string            `xml:"Schedule"`
-	SourceZones                  *ZoneList         `xml:"SourceZones"`
-	DestinationZones             *ZoneList         `xml:"DestinationZones"`
-	SourceNetworks               *NetworkList      `xml:"SourceNetworks,omitempty"`
-	DestinationNetworks          *NetworkList      `xml:"DestinationNetworks,omitempty"`
-	DSCPMarking                  string            `xml:"DSCPMarking,omitempty"`
-	WebFilter                    string            `xml:"WebFilter,omitempty"`
-	WebCategoryBaseQoSPolicy     string            `xml:"WebCategoryBaseQoSPolicy,omitempty"`
-	BlockQuickQuic               string            `xml:"BlockQuickQuic,omitempty"`
-	ScanVirus                    string            `xml:"ScanVirus,omitempty"`
-	ZeroDayProtection            string            `xml:"ZeroDayProtection,omitempty"`
-	ProxyMode                    string            `xml:"ProxyMode,omitempty"`
-	DecryptHTTPS                 string            `xml:"DecryptHTTPS,omitempty"`
-	ApplicationControl           string            `xml:"ApplicationControl,omitempty"`
-	ApplicationBaseQoSPolicy     string            `xml:"ApplicationBaseQoSPolicy,omitempty"`
-	IntrusionPrevention          string            `xml:"IntrusionPrevention,omitempty"`
-	TrafficShappingPolicy        string            `xml:"TrafficShappingPolicy,omitempty"`
-	ScanSMTP                     string            `xml:"ScanSMTP,omitempty"`
-	ScanSMTPS                    string            `xml:"ScanSMTPS,omitempty"`
-	ScanIMAP                     string            `xml:"ScanIMAP,omitempty"`
-	ScanIMAPS                    string            `xml:"ScanIMAPS,omitempty"`
-	ScanPOP3                     string            `xml:"ScanPOP3,omitempty"`
-	ScanPOP3S                    string            `xml:"ScanPOP3S,omitempty"`
-	ScanFTP                      string            `xml:"ScanFTP,omitempty"`
-	SourceSecurityHeartbeat      string            `xml:"SourceSecurityHeartbeat,omitempty"`
-	MinimumSourceHBPermitted     string            `xml:"MinimumSourceHBPermitted,omitempty"`
-	DestSecurityHeartbeat        string            `xml:"DestSecurityHeartbeat,omitempty"`
-	MinimumDestinationHBPermitted string           `xml:"MinimumDestinationHBPermitted,omitempty"`
+	Action                        string       `xml:"Action"`
+	LogTraffic                    string       `xml:"LogTraffic"`
+	SkipLocalDestined             string       `xml:"SkipLocalDestined"`
+	Schedule                      string       `xml:"Schedule"`
+	SourceZones                   *ZoneList    `xml:"SourceZones"`
+	DestinationZones              *ZoneList    `xml:"DestinationZones"`
+	SourceNetworks                *NetworkList `xml:"SourceNetworks,omitempty"`
+	DestinationNetworks           *NetworkList `xml:"DestinationNetworks,omitempty"`
+	Services                      *ServiceList `xml:"Services,omitempty"`
+	DSCPMarking                   string       `xml:"DSCPMarking,omitempty"`
+	WebFilter                     string       `xml:"WebFilter,omitempty"`
+	WebCategoryBaseQoSPolicy      string       `xml:"WebCategoryBaseQoSPolicy,omitempty"`
+	BlockQuickQuic                string       `xml:"BlockQuickQuic,omitempty"`
+	ScanVirus                     string       `xml:"ScanVirus,omitempty"`
+	ZeroDayProtection             string       `xml:"ZeroDayProtection,omitempty"`
+	ProxyMode                     string       `xml:"ProxyMode,omitempty"`
+	DecryptHTTPS                  string       `xml:"DecryptHTTPS,omitempty"`
+	ApplicationControl            string       `xml:"ApplicationControl,omitempty"`
+	ApplicationBaseQoSPolicy      string       `xml:"ApplicationBaseQoSPolicy,omitempty"`
+	IntrusionPrevention           string       `xml:"IntrusionPrevention,omitempty"`
+	TrafficShappingPolicy         string       `xml:"TrafficShappingPolicy,omitempty"`
+	ScanSMTP                      string       `xml:"ScanSMTP,omitempty"`
+	ScanSMTPS                     string       `xml:"ScanSMTPS,omitempty"`
+	ScanIMAP                      string       `xml:"ScanIMAP,omitempty"`
+	ScanIMAPS                     string       `xml:"ScanIMAPS,omitempty"`
+	ScanPOP3                      string       `xml:"ScanPOP3,omitempty"`
+	ScanPOP3S                     string       `xml:"ScanPOP3S,omitempty"`
+	ScanFTP                       string       `xml:"ScanFTP,omitempty"`
+	SourceSecurityHeartbeat       string       `xml:"SourceSecurityHeartbeat,omitempty"`
+	MinimumSourceHBPermitted      string       `xml:"MinimumSourceHBPermitted,omitempty"`
+	DestSecurityHeartbeat         string       `xml:"DestSecurityHeartbeat,omitempty"`
+	MinimumDestinationHBPermitted string       `xml:"MinimumDestinationHBPermitted,omitempty"`
 }
 
 // ZoneList contains a list of zones
@@ -83,10 +84,15 @@ type NetworkList struct {
 	Networks []string `xml:"Network"`
 }
 
+// ServiceList contains a list of services
+type ServiceList struct {
+	Services []string `xml:"Service"`
+}
+
 // XML API firewall rule request structures
 type firewallRuleRequestXML struct {
-	XMLName xml.Name  `xml:"Request"`
-	Login   LoginXML  `xml:"Login"`
+	XMLName xml.Name           `xml:"Request"`
+	Login   LoginXML           `xml:"Login"`
 	Set     firewallRuleSetXML `xml:"Set"`
 }
 
@@ -96,10 +102,9 @@ type LoginXML struct {
 }
 
 type firewallRuleSetXML struct {
-	Operation    string         `xml:"operation,attr"`
+	Operation     string          `xml:"operation,attr"`
 	FirewallRules []*FirewallRule `xml:"FirewallRule"`
 }
-
 
 // Ensure the implementation satisfies the expected interfaces
 var _ resource.Resource = &firewallRuleResource{}
@@ -128,6 +133,7 @@ type firewallRuleResourceModel struct {
 	Schedule                      types.String   `tfsdk:"schedule"`
 	SourceNetworks                []types.String `tfsdk:"source_networks"`
 	DestinationNetworks           []types.String `tfsdk:"destination_networks"`
+	Services                      []types.String `tfsdk:"services"`
 	DSCPMarking                   types.String   `tfsdk:"dscp_marking"`
 	WebFilter                     types.String   `tfsdk:"web_filter"`
 	WebCategoryBaseQoSPolicy      types.String   `tfsdk:"web_category_base_qos_policy"`
@@ -242,6 +248,11 @@ func (r *firewallRuleResource) Schema(_ context.Context, _ resource.SchemaReques
 			},
 			"destination_networks": schema.ListAttribute{
 				Description: "List of destination networks",
+				Optional:    true,
+				ElementType: types.StringType,
+			},
+			"services": schema.ListAttribute{
+				Description: "List of services matched by the firewall rule",
 				Optional:    true,
 				ElementType: types.StringType,
 			},
@@ -443,7 +454,7 @@ func (r *firewallRuleResource) Read(ctx context.Context, req resource.ReadReques
 
 	// Update the Terraform state
 	state = r.apiToModelFirewallRule(*rule)
-	
+
 	// Save the updated state
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -512,12 +523,12 @@ func (r *firewallRuleResource) ImportState(ctx context.Context, req resource.Imp
 // Helper method to convert from Terraform model to API structure
 func (r *firewallRuleResource) modelToAPIFirewallRule(model firewallRuleResourceModel) *firewallrule.FirewallRule {
 	rule := &firewallrule.FirewallRule{
-		Name:         model.Name.ValueString(),
-		Description:  model.Description.ValueString(),
-		IPFamily:     model.IPFamily.ValueString(),
-		Status:       model.Status.ValueString(),
-		Position:     model.Position.ValueString(),
-		PolicyType:   model.PolicyType.ValueString(),
+		Name:          model.Name.ValueString(),
+		Description:   model.Description.ValueString(),
+		IPFamily:      model.IPFamily.ValueString(),
+		Status:        model.Status.ValueString(),
+		Position:      model.Position.ValueString(),
+		PolicyType:    model.PolicyType.ValueString(),
 		TransactionID: "",
 	}
 
@@ -546,91 +557,91 @@ func (r *firewallRuleResource) modelToAPIFirewallRule(model firewallRuleResource
 	if !model.DSCPMarking.IsNull() {
 		rule.NetworkPolicy.DSCPMarking = model.DSCPMarking.ValueString()
 	}
-	
+
 	if !model.WebFilter.IsNull() {
 		rule.NetworkPolicy.WebFilter = model.WebFilter.ValueString()
 	}
-	
+
 	if !model.WebCategoryBaseQoSPolicy.IsNull() {
 		rule.NetworkPolicy.WebCategoryBaseQoSPolicy = model.WebCategoryBaseQoSPolicy.ValueString()
 	}
-	
+
 	if !model.BlockQuickQuic.IsNull() {
 		rule.NetworkPolicy.BlockQuickQuic = model.BlockQuickQuic.ValueString()
 	}
-	
+
 	if !model.ScanVirus.IsNull() {
 		rule.NetworkPolicy.ScanVirus = model.ScanVirus.ValueString()
 	}
-	
+
 	if !model.ZeroDayProtection.IsNull() {
 		rule.NetworkPolicy.ZeroDayProtection = model.ZeroDayProtection.ValueString()
 	}
-	
+
 	if !model.ProxyMode.IsNull() {
 		rule.NetworkPolicy.ProxyMode = model.ProxyMode.ValueString()
 	}
-	
+
 	if !model.DecryptHTTPS.IsNull() {
 		rule.NetworkPolicy.DecryptHTTPS = model.DecryptHTTPS.ValueString()
 	}
-	
+
 	if !model.ApplicationControl.IsNull() {
 		rule.NetworkPolicy.ApplicationControl = model.ApplicationControl.ValueString()
 	}
-	
+
 	if !model.ApplicationBaseQoSPolicy.IsNull() {
 		rule.NetworkPolicy.ApplicationBaseQoSPolicy = model.ApplicationBaseQoSPolicy.ValueString()
 	}
-	
+
 	if !model.IntrusionPrevention.IsNull() {
 		rule.NetworkPolicy.IntrusionPrevention = model.IntrusionPrevention.ValueString()
 	}
-	
+
 	if !model.TrafficShappingPolicy.IsNull() {
 		rule.NetworkPolicy.TrafficShappingPolicy = model.TrafficShappingPolicy.ValueString()
 	}
-	
+
 	if !model.ScanSMTP.IsNull() {
 		rule.NetworkPolicy.ScanSMTP = model.ScanSMTP.ValueString()
 	}
-	
+
 	if !model.ScanSMTPS.IsNull() {
 		rule.NetworkPolicy.ScanSMTPS = model.ScanSMTPS.ValueString()
 	}
-	
+
 	if !model.ScanIMAP.IsNull() {
 		rule.NetworkPolicy.ScanIMAP = model.ScanIMAP.ValueString()
 	}
-	
+
 	if !model.ScanIMAPS.IsNull() {
 		rule.NetworkPolicy.ScanIMAPS = model.ScanIMAPS.ValueString()
 	}
-	
+
 	if !model.ScanPOP3.IsNull() {
 		rule.NetworkPolicy.ScanPOP3 = model.ScanPOP3.ValueString()
 	}
-	
+
 	if !model.ScanPOP3S.IsNull() {
 		rule.NetworkPolicy.ScanPOP3S = model.ScanPOP3S.ValueString()
 	}
-	
+
 	if !model.ScanFTP.IsNull() {
 		rule.NetworkPolicy.ScanFTP = model.ScanFTP.ValueString()
 	}
-	
+
 	if !model.SourceSecurityHeartbeat.IsNull() {
 		rule.NetworkPolicy.SourceSecurityHeartbeat = model.SourceSecurityHeartbeat.ValueString()
 	}
-	
+
 	if !model.MinimumSourceHBPermitted.IsNull() {
 		rule.NetworkPolicy.MinimumSourceHBPermitted = model.MinimumSourceHBPermitted.ValueString()
 	}
-	
+
 	if !model.DestSecurityHeartbeat.IsNull() {
 		rule.NetworkPolicy.DestSecurityHeartbeat = model.DestSecurityHeartbeat.ValueString()
 	}
-	
+
 	if !model.MinimumDestinationHBPermitted.IsNull() {
 		rule.NetworkPolicy.MinimumDestinationHBPermitted = model.MinimumDestinationHBPermitted.ValueString()
 	}
@@ -675,139 +686,158 @@ func (r *firewallRuleResource) modelToAPIFirewallRule(model firewallRuleResource
 		}
 	}
 
+	if len(model.Services) > 0 {
+		rule.NetworkPolicy.Services = &firewallrule.ServiceList{
+			Services: make([]string, 0, len(model.Services)),
+		}
+		for _, service := range model.Services {
+			rule.NetworkPolicy.Services.Services = append(rule.NetworkPolicy.Services.Services, service.ValueString())
+		}
+	}
+
 	return rule
 }
 
 // Helper method to convert from API structure to Terraform model
 func (r *firewallRuleResource) apiToModelFirewallRule(rule firewallrule.FirewallRule) firewallRuleResourceModel {
-    model := firewallRuleResourceModel{
-        Name:        types.StringValue(rule.Name),
-        Description: types.StringValue(rule.Description),
-        IPFamily:    types.StringValue(rule.IPFamily),
-        Status:      types.StringValue(rule.Status),
-        Position:    types.StringValue(rule.Position),
-        PolicyType:  types.StringValue(rule.PolicyType),
-    }
+	model := firewallRuleResourceModel{
+		Name:        types.StringValue(rule.Name),
+		Description: types.StringValue(rule.Description),
+		IPFamily:    types.StringValue(rule.IPFamily),
+		Status:      types.StringValue(rule.Status),
+		Position:    types.StringValue(rule.Position),
+		PolicyType:  types.StringValue(rule.PolicyType),
+	}
 
-    // Set position references
-    if rule.After != nil {
-        model.AfterRule = types.StringValue(rule.After.Name)
-    } else {
-        model.AfterRule = types.StringNull()
-    }
+	// Set position references
+	if rule.After != nil {
+		model.AfterRule = types.StringValue(rule.After.Name)
+	} else {
+		model.AfterRule = types.StringNull()
+	}
 
-    if rule.Before != nil {
-        model.BeforeRule = types.StringValue(rule.Before.Name)
-    } else {
-        model.BeforeRule = types.StringNull()
-    }
+	if rule.Before != nil {
+		model.BeforeRule = types.StringValue(rule.Before.Name)
+	} else {
+		model.BeforeRule = types.StringNull()
+	}
 
-    // Set network policy attributes
-    if rule.NetworkPolicy != nil {
-        model.Action = types.StringValue(rule.NetworkPolicy.Action)
-        model.LogTraffic = types.StringValue(rule.NetworkPolicy.LogTraffic)
-        model.SkipLocalDestined = types.StringValue(rule.NetworkPolicy.SkipLocalDestined)
-        model.Schedule = types.StringValue(rule.NetworkPolicy.Schedule)
+	// Set network policy attributes
+	if rule.NetworkPolicy != nil {
+		model.Action = types.StringValue(rule.NetworkPolicy.Action)
+		model.LogTraffic = types.StringValue(rule.NetworkPolicy.LogTraffic)
+		model.SkipLocalDestined = types.StringValue(rule.NetworkPolicy.SkipLocalDestined)
+		model.Schedule = types.StringValue(rule.NetworkPolicy.Schedule)
 
-        // Map all additional fields from NetworkPolicy
-        model.DSCPMarking = types.StringValue(rule.NetworkPolicy.DSCPMarking)
-        model.WebFilter = types.StringValue(rule.NetworkPolicy.WebFilter)
-        model.WebCategoryBaseQoSPolicy = types.StringValue(rule.NetworkPolicy.WebCategoryBaseQoSPolicy)
-        model.BlockQuickQuic = types.StringValue(rule.NetworkPolicy.BlockQuickQuic)
-        model.ScanVirus = types.StringValue(rule.NetworkPolicy.ScanVirus)
-        model.ZeroDayProtection = types.StringValue(rule.NetworkPolicy.ZeroDayProtection)
-        model.ProxyMode = types.StringValue(rule.NetworkPolicy.ProxyMode)
-        model.DecryptHTTPS = types.StringValue(rule.NetworkPolicy.DecryptHTTPS)
-        model.ApplicationControl = types.StringValue(rule.NetworkPolicy.ApplicationControl)
-        model.ApplicationBaseQoSPolicy = types.StringValue(rule.NetworkPolicy.ApplicationBaseQoSPolicy)
-        model.IntrusionPrevention = types.StringValue(rule.NetworkPolicy.IntrusionPrevention)
-        model.TrafficShappingPolicy = types.StringValue(rule.NetworkPolicy.TrafficShappingPolicy) // Corrected typo: TrafficShapingPolicy
-        model.ScanSMTP = types.StringValue(rule.NetworkPolicy.ScanSMTP)
-        model.ScanSMTPS = types.StringValue(rule.NetworkPolicy.ScanSMTPS)
-        model.ScanIMAP = types.StringValue(rule.NetworkPolicy.ScanIMAP)
-        model.ScanIMAPS = types.StringValue(rule.NetworkPolicy.ScanIMAPS)
-        model.ScanPOP3 = types.StringValue(rule.NetworkPolicy.ScanPOP3)
-        model.ScanPOP3S = types.StringValue(rule.NetworkPolicy.ScanPOP3S)
-        model.ScanFTP = types.StringValue(rule.NetworkPolicy.ScanFTP)
-        model.SourceSecurityHeartbeat = types.StringValue(rule.NetworkPolicy.SourceSecurityHeartbeat)
-        model.MinimumSourceHBPermitted = types.StringValue(rule.NetworkPolicy.MinimumSourceHBPermitted)
-        model.DestSecurityHeartbeat = types.StringValue(rule.NetworkPolicy.DestSecurityHeartbeat)
-        model.MinimumDestinationHBPermitted = types.StringValue(rule.NetworkPolicy.MinimumDestinationHBPermitted)
+		// Map all additional fields from NetworkPolicy
+		model.DSCPMarking = types.StringValue(rule.NetworkPolicy.DSCPMarking)
+		model.WebFilter = types.StringValue(rule.NetworkPolicy.WebFilter)
+		model.WebCategoryBaseQoSPolicy = types.StringValue(rule.NetworkPolicy.WebCategoryBaseQoSPolicy)
+		model.BlockQuickQuic = types.StringValue(rule.NetworkPolicy.BlockQuickQuic)
+		model.ScanVirus = types.StringValue(rule.NetworkPolicy.ScanVirus)
+		model.ZeroDayProtection = types.StringValue(rule.NetworkPolicy.ZeroDayProtection)
+		model.ProxyMode = types.StringValue(rule.NetworkPolicy.ProxyMode)
+		model.DecryptHTTPS = types.StringValue(rule.NetworkPolicy.DecryptHTTPS)
+		model.ApplicationControl = types.StringValue(rule.NetworkPolicy.ApplicationControl)
+		model.ApplicationBaseQoSPolicy = types.StringValue(rule.NetworkPolicy.ApplicationBaseQoSPolicy)
+		model.IntrusionPrevention = types.StringValue(rule.NetworkPolicy.IntrusionPrevention)
+		model.TrafficShappingPolicy = types.StringValue(rule.NetworkPolicy.TrafficShappingPolicy) // Corrected typo: TrafficShapingPolicy
+		model.ScanSMTP = types.StringValue(rule.NetworkPolicy.ScanSMTP)
+		model.ScanSMTPS = types.StringValue(rule.NetworkPolicy.ScanSMTPS)
+		model.ScanIMAP = types.StringValue(rule.NetworkPolicy.ScanIMAP)
+		model.ScanIMAPS = types.StringValue(rule.NetworkPolicy.ScanIMAPS)
+		model.ScanPOP3 = types.StringValue(rule.NetworkPolicy.ScanPOP3)
+		model.ScanPOP3S = types.StringValue(rule.NetworkPolicy.ScanPOP3S)
+		model.ScanFTP = types.StringValue(rule.NetworkPolicy.ScanFTP)
+		model.SourceSecurityHeartbeat = types.StringValue(rule.NetworkPolicy.SourceSecurityHeartbeat)
+		model.MinimumSourceHBPermitted = types.StringValue(rule.NetworkPolicy.MinimumSourceHBPermitted)
+		model.DestSecurityHeartbeat = types.StringValue(rule.NetworkPolicy.DestSecurityHeartbeat)
+		model.MinimumDestinationHBPermitted = types.StringValue(rule.NetworkPolicy.MinimumDestinationHBPermitted)
 
-        // Source Zones
-        if rule.NetworkPolicy.SourceZones != nil {
-            model.SourceZones = make([]types.String, 0, len(rule.NetworkPolicy.SourceZones.Zones))
-            for _, zone := range rule.NetworkPolicy.SourceZones.Zones {
-                model.SourceZones = append(model.SourceZones, types.StringValue(zone))
-            }
-        } else {
-            model.SourceZones = nil // Or []types.String{} depending on desired null/empty representation
-        }
+		// Source Zones
+		if rule.NetworkPolicy.SourceZones != nil {
+			model.SourceZones = make([]types.String, 0, len(rule.NetworkPolicy.SourceZones.Zones))
+			for _, zone := range rule.NetworkPolicy.SourceZones.Zones {
+				model.SourceZones = append(model.SourceZones, types.StringValue(zone))
+			}
+		} else {
+			model.SourceZones = nil // Or []types.String{} depending on desired null/empty representation
+		}
 
-        // Destination Zones
-        if rule.NetworkPolicy.DestinationZones != nil {
-            model.DestinationZones = make([]types.String, 0, len(rule.NetworkPolicy.DestinationZones.Zones))
-            for _, zone := range rule.NetworkPolicy.DestinationZones.Zones {
-                model.DestinationZones = append(model.DestinationZones, types.StringValue(zone))
-            }
-        } else {
-            model.DestinationZones = nil
-        }
+		// Destination Zones
+		if rule.NetworkPolicy.DestinationZones != nil {
+			model.DestinationZones = make([]types.String, 0, len(rule.NetworkPolicy.DestinationZones.Zones))
+			for _, zone := range rule.NetworkPolicy.DestinationZones.Zones {
+				model.DestinationZones = append(model.DestinationZones, types.StringValue(zone))
+			}
+		} else {
+			model.DestinationZones = nil
+		}
 
-        // Source Networks
-        if rule.NetworkPolicy.SourceNetworks != nil {
-            model.SourceNetworks = make([]types.String, 0, len(rule.NetworkPolicy.SourceNetworks.Networks))
-            for _, network := range rule.NetworkPolicy.SourceNetworks.Networks {
-                model.SourceNetworks = append(model.SourceNetworks, types.StringValue(network))
-            }
-        } else {
-            model.SourceNetworks = nil
-        }
+		// Source Networks
+		if rule.NetworkPolicy.SourceNetworks != nil {
+			model.SourceNetworks = make([]types.String, 0, len(rule.NetworkPolicy.SourceNetworks.Networks))
+			for _, network := range rule.NetworkPolicy.SourceNetworks.Networks {
+				model.SourceNetworks = append(model.SourceNetworks, types.StringValue(network))
+			}
+		} else {
+			model.SourceNetworks = nil
+		}
 
-        // Destination Networks
-        if rule.NetworkPolicy.DestinationNetworks != nil {
-            model.DestinationNetworks = make([]types.String, 0, len(rule.NetworkPolicy.DestinationNetworks.Networks))
-            for _, network := range rule.NetworkPolicy.DestinationNetworks.Networks {
-                model.DestinationNetworks = append(model.DestinationNetworks, types.StringValue(network))
-            }
-        } else {
-            model.DestinationNetworks = nil
-        }
+		// Destination Networks
+		if rule.NetworkPolicy.DestinationNetworks != nil {
+			model.DestinationNetworks = make([]types.String, 0, len(rule.NetworkPolicy.DestinationNetworks.Networks))
+			for _, network := range rule.NetworkPolicy.DestinationNetworks.Networks {
+				model.DestinationNetworks = append(model.DestinationNetworks, types.StringValue(network))
+			}
+		} else {
+			model.DestinationNetworks = nil
+		}
 
-    } else {
-        // Handle case where NetworkPolicy is nil (e.g., set defaults or nulls)
-        model.Action = types.StringNull()
-        model.LogTraffic = types.StringNull() // Or default value like types.StringValue("Disable")
-        model.SkipLocalDestined = types.StringNull() // Or default
-        model.Schedule = types.StringNull() // Or default like types.StringValue("AllTheTime")
-        model.DSCPMarking = types.StringNull()
-        model.WebFilter = types.StringNull() // Or default like types.StringValue("None")
-        model.WebCategoryBaseQoSPolicy = types.StringNull() // Or default
-        model.BlockQuickQuic = types.StringNull() // Or default
-        model.ScanVirus = types.StringNull() // Or default
-        model.ZeroDayProtection = types.StringNull() // Or default
-        model.ProxyMode = types.StringNull() // Or default
-        model.DecryptHTTPS = types.StringNull() // Or default
-        model.ApplicationControl = types.StringNull() // Or default
-        model.ApplicationBaseQoSPolicy = types.StringNull() // Or default
-        model.IntrusionPrevention = types.StringNull() // Or default
-        model.TrafficShappingPolicy = types.StringNull() // Or default
-        model.ScanSMTP = types.StringNull() // Or default
-        model.ScanSMTPS = types.StringNull() // Or default
-        model.ScanIMAP = types.StringNull() // Or default
-        model.ScanIMAPS = types.StringNull() // Or default
-        model.ScanPOP3 = types.StringNull() // Or default
-        model.ScanPOP3S = types.StringNull() // Or default
-        model.ScanFTP = types.StringNull() // Or default
-        model.SourceSecurityHeartbeat = types.StringNull() // Or default
-        model.MinimumSourceHBPermitted = types.StringNull() // Or default
-        model.DestSecurityHeartbeat = types.StringNull() // Or default
-        model.MinimumDestinationHBPermitted = types.StringNull() // Or default
-        model.SourceZones = nil
-        model.DestinationZones = nil
-        model.SourceNetworks = nil
-        model.DestinationNetworks = nil
-    }
+		if rule.NetworkPolicy.Services != nil {
+			model.Services = make([]types.String, 0, len(rule.NetworkPolicy.Services.Services))
+			for _, service := range rule.NetworkPolicy.Services.Services {
+				model.Services = append(model.Services, types.StringValue(service))
+			}
+		} else {
+			model.Services = nil
+		}
 
-    return model
+	} else {
+		// Handle case where NetworkPolicy is nil (e.g., set defaults or nulls)
+		model.Action = types.StringNull()
+		model.LogTraffic = types.StringNull()        // Or default value like types.StringValue("Disable")
+		model.SkipLocalDestined = types.StringNull() // Or default
+		model.Schedule = types.StringNull()          // Or default like types.StringValue("AllTheTime")
+		model.DSCPMarking = types.StringNull()
+		model.WebFilter = types.StringNull()                     // Or default like types.StringValue("None")
+		model.WebCategoryBaseQoSPolicy = types.StringNull()      // Or default
+		model.BlockQuickQuic = types.StringNull()                // Or default
+		model.ScanVirus = types.StringNull()                     // Or default
+		model.ZeroDayProtection = types.StringNull()             // Or default
+		model.ProxyMode = types.StringNull()                     // Or default
+		model.DecryptHTTPS = types.StringNull()                  // Or default
+		model.ApplicationControl = types.StringNull()            // Or default
+		model.ApplicationBaseQoSPolicy = types.StringNull()      // Or default
+		model.IntrusionPrevention = types.StringNull()           // Or default
+		model.TrafficShappingPolicy = types.StringNull()         // Or default
+		model.ScanSMTP = types.StringNull()                      // Or default
+		model.ScanSMTPS = types.StringNull()                     // Or default
+		model.ScanIMAP = types.StringNull()                      // Or default
+		model.ScanIMAPS = types.StringNull()                     // Or default
+		model.ScanPOP3 = types.StringNull()                      // Or default
+		model.ScanPOP3S = types.StringNull()                     // Or default
+		model.ScanFTP = types.StringNull()                       // Or default
+		model.SourceSecurityHeartbeat = types.StringNull()       // Or default
+		model.MinimumSourceHBPermitted = types.StringNull()      // Or default
+		model.DestSecurityHeartbeat = types.StringNull()         // Or default
+		model.MinimumDestinationHBPermitted = types.StringNull() // Or default
+		model.SourceZones = nil
+		model.DestinationZones = nil
+		model.SourceNetworks = nil
+		model.DestinationNetworks = nil
+		model.Services = nil
+	}
+
+	return model
 }

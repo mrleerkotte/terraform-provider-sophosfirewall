@@ -33,6 +33,7 @@ resource "sophosfirewall_firewallrule" "allow_internal_web" {
   # Network settings
   source_networks      = [sophosfirewall_iphost.terraformSrc2.name]
   destination_networks = [sophosfirewall_iphost.terraformDst3.name]
+  services             = ["HTTP", "HTTPS"]
 
   depends_on = [
     sophosfirewall_iphost.terraformSrc2,
@@ -84,6 +85,7 @@ The following arguments are supported:
 * `schedule` - (Optional) Schedule name. Defaults to "".
 * `source_networks` - (Optional) List of source networks.
 * `destination_networks` - (Optional) List of destination networks.
+* `services` - (Optional) List of Sophos service object names to match in the rule.
 
 ## Import
 

@@ -16,4 +16,5 @@ resource "sophosfirewall_firewallrule" "allow_internal_web" {
 
   source_networks      = ["LAN_NETWORK"]
   destination_networks = ["Any"]
+  services             = ["HTTP", "HTTPS"]
 }
