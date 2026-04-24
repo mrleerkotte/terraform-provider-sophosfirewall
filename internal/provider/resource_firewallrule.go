@@ -641,7 +641,7 @@ func (r *firewallRuleResource) modelToAPIFirewallRule(model firewallRuleResource
 func (r *firewallRuleResource) apiToModelFirewallRule(rule firewallrule.FirewallRule) firewallRuleResourceModel {
 	model := firewallRuleResourceModel{
 		Name:        types.StringValue(rule.Name),
-		Description: types.StringValue(rule.Description),
+		Description: stringValueOrNull(rule.Description),
 		IPFamily:    types.StringValue(rule.IPFamily),
 		Status:      types.StringValue(rule.Status),
 		Position:    types.StringValue(rule.Position),
@@ -1055,6 +1055,14 @@ func stringValueOrDefault(value types.String, defaultValue string) string {
 	return value.ValueString()
 }
 
+func stringValueOrNull(value string) types.String {
+	if value == "" {
+		return types.StringNull()
+	}
+
+	return types.StringValue(value)
+}
+
 func validateFirewallRulePlan(plan firewallRuleResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -1107,6 +1115,14 @@ func (r *firewallRuleResource) reconcileFirewallRuleState(actual firewallRuleRes
 
 	if sameStringSet(actual.DestinationZones, expected.DestinationZones) {
 		actual.DestinationZones = expected.DestinationZones
+	}
+
+	if sameStringSet(actual.SourceNetworks, expected.SourceNetworks) {
+		actual.SourceNetworks = expected.SourceNetworks
+	}
+
+	if sameStringSet(actual.DestinationNetworks, expected.DestinationNetworks) {
+		actual.DestinationNetworks = expected.DestinationNetworks
 	}
 
 	if sameStringSet(actual.Services, expected.Services) {

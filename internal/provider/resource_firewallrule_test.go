@@ -54,6 +54,21 @@ func TestFirewallRuleServiceMappingFromAPI(t *testing.T) {
 	}
 }
 
+func TestFirewallRuleEmptyDescriptionMapsToNull(t *testing.T) {
+	resource := &firewallRuleResource{}
+	rule := firewallrule.FirewallRule{
+		Name:        "allow_web",
+		Description: "",
+		PolicyType:  "Network",
+	}
+
+	model := resource.apiToModelFirewallRule(rule)
+
+	if !model.Description.IsNull() {
+		t.Fatalf("expected empty description to map to null, got %#v", model.Description)
+	}
+}
+
 func TestReconcileFirewallRuleStateKeepsBottomPosition(t *testing.T) {
 	resource := &firewallRuleResource{}
 	actual := firewallRuleResourceModel{
@@ -257,6 +272,100 @@ func TestReconcileFirewallRuleStateDoesNotMaskActualServiceChanges(t *testing.T)
 
 	if reconciled.Services[1].ValueString() != "HTTPS" {
 		t.Fatalf("expected actual service changes to remain visible, got %#v", reconciled.Services)
+	}
+}
+
+func TestReconcileFirewallRuleStatePreservesSourceNetworkOrderWhenSetMatches(t *testing.T) {
+	resource := &firewallRuleResource{}
+	actual := firewallRuleResourceModel{
+		SourceNetworks: []types.String{
+			types.StringValue("host-b"),
+			types.StringValue("host-a"),
+			types.StringValue("host-c"),
+		},
+	}
+	expected := firewallRuleResourceModel{
+		SourceNetworks: []types.String{
+			types.StringValue("host-a"),
+			types.StringValue("host-c"),
+			types.StringValue("host-b"),
+		},
+	}
+
+	reconciled := resource.reconcileFirewallRuleState(actual, expected)
+
+	for i, network := range expected.SourceNetworks {
+		if reconciled.SourceNetworks[i].ValueString() != network.ValueString() {
+			t.Fatalf("expected source_networks order to match plan, got %#v", reconciled.SourceNetworks)
+		}
+	}
+}
+
+func TestReconcileFirewallRuleStatePreservesDestinationNetworkOrderWhenSetMatches(t *testing.T) {
+	resource := &firewallRuleResource{}
+	actual := firewallRuleResourceModel{
+		DestinationNetworks: []types.String{
+			types.StringValue("net-b"),
+			types.StringValue("net-a"),
+		},
+	}
+	expected := firewallRuleResourceModel{
+		DestinationNetworks: []types.String{
+			types.StringValue("net-a"),
+			types.StringValue("net-b"),
+		},
+	}
+
+	reconciled := resource.reconcileFirewallRuleState(actual, expected)
+
+	for i, network := range expected.DestinationNetworks {
+		if reconciled.DestinationNetworks[i].ValueString() != network.ValueString() {
+			t.Fatalf("expected destination_networks order to match plan, got %#v", reconciled.DestinationNetworks)
+		}
+	}
+}
+
+func TestReconcileFirewallRuleStateDoesNotMaskActualSourceNetworkChanges(t *testing.T) {
+	resource := &firewallRuleResource{}
+	actual := firewallRuleResourceModel{
+		SourceNetworks: []types.String{
+			types.StringValue("host-a"),
+			types.StringValue("host-b"),
+		},
+	}
+	expected := firewallRuleResourceModel{
+		SourceNetworks: []types.String{
+			types.StringValue("host-a"),
+			types.StringValue("host-c"),
+		},
+	}
+
+	reconciled := resource.reconcileFirewallRuleState(actual, expected)
+
+	if reconciled.SourceNetworks[1].ValueString() != "host-b" {
+		t.Fatalf("expected actual source_network changes to remain visible, got %#v", reconciled.SourceNetworks)
+	}
+}
+
+func TestReconcileFirewallRuleStateDoesNotMaskActualDestinationNetworkChanges(t *testing.T) {
+	resource := &firewallRuleResource{}
+	actual := firewallRuleResourceModel{
+		DestinationNetworks: []types.String{
+			types.StringValue("net-a"),
+			types.StringValue("net-b"),
+		},
+	}
+	expected := firewallRuleResourceModel{
+		DestinationNetworks: []types.String{
+			types.StringValue("net-a"),
+			types.StringValue("net-c"),
+		},
+	}
+
+	reconciled := resource.reconcileFirewallRuleState(actual, expected)
+
+	if reconciled.DestinationNetworks[1].ValueString() != "net-b" {
+		t.Fatalf("expected actual destination_network changes to remain visible, got %#v", reconciled.DestinationNetworks)
 	}
 }
 
