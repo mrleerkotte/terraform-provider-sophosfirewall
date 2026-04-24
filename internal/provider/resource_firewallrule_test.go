@@ -198,6 +198,54 @@ func TestReconcileFirewallRuleStateDoesNotMaskActualZoneChanges(t *testing.T) {
 	}
 }
 
+func TestReconcileFirewallRuleStatePreservesServiceOrderWhenSetMatches(t *testing.T) {
+	resource := &firewallRuleResource{}
+	actual := firewallRuleResourceModel{
+		Services: []types.String{
+			types.StringValue("HTTPS"),
+			types.StringValue("HTTP"),
+			types.StringValue("SMTP"),
+		},
+	}
+	expected := firewallRuleResourceModel{
+		Services: []types.String{
+			types.StringValue("HTTP"),
+			types.StringValue("SMTP"),
+			types.StringValue("HTTPS"),
+		},
+	}
+
+	reconciled := resource.reconcileFirewallRuleState(actual, expected)
+
+	for i, service := range expected.Services {
+		if reconciled.Services[i].ValueString() != service.ValueString() {
+			t.Fatalf("expected services order to match plan, got %#v", reconciled.Services)
+		}
+	}
+}
+
+func TestReconcileFirewallRuleStateDoesNotMaskActualServiceChanges(t *testing.T) {
+	resource := &firewallRuleResource{}
+	actual := firewallRuleResourceModel{
+		Services: []types.String{
+			types.StringValue("HTTP"),
+			types.StringValue("HTTPS"),
+		},
+	}
+	expected := firewallRuleResourceModel{
+		Services: []types.String{
+			types.StringValue("HTTP"),
+			types.StringValue("SMTP"),
+		},
+	}
+
+	reconciled := resource.reconcileFirewallRuleState(actual, expected)
+
+	if reconciled.Services[1].ValueString() != "HTTPS" {
+		t.Fatalf("expected actual service changes to remain visible, got %#v", reconciled.Services)
+	}
+}
+
 func TestModelToAPIFirewallRuleOmitsAnyZones(t *testing.T) {
 	resource := &firewallRuleResource{}
 	model := firewallRuleResourceModel{

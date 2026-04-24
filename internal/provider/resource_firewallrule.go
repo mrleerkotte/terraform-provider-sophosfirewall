@@ -1105,6 +1105,10 @@ func (r *firewallRuleResource) reconcileFirewallRuleState(actual firewallRuleRes
 		actual.DestinationZones = expected.DestinationZones
 	}
 
+	if sameStringSet(actual.Services, expected.Services) {
+		actual.Services = expected.Services
+	}
+
 	return actual
 }
 
