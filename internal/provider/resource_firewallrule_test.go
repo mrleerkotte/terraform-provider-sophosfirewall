@@ -124,6 +124,80 @@ func TestReconcileFirewallRuleStateKeepsAnyZones(t *testing.T) {
 	}
 }
 
+func TestReconcileFirewallRuleStatePreservesSourceZoneOrderWhenSetMatches(t *testing.T) {
+	resource := &firewallRuleResource{}
+	actual := firewallRuleResourceModel{
+		SourceZones: []types.String{
+			types.StringValue("DMZ"),
+			types.StringValue("SRV"),
+			types.StringValue("WireGuard"),
+			types.StringValue("MGMT"),
+		},
+	}
+	expected := firewallRuleResourceModel{
+		SourceZones: []types.String{
+			types.StringValue("SRV"),
+			types.StringValue("MGMT"),
+			types.StringValue("DMZ"),
+			types.StringValue("WireGuard"),
+		},
+	}
+
+	reconciled := resource.reconcileFirewallRuleState(actual, expected)
+
+	for i, zone := range expected.SourceZones {
+		if reconciled.SourceZones[i].ValueString() != zone.ValueString() {
+			t.Fatalf("expected source_zones order to match plan, got %#v", reconciled.SourceZones)
+		}
+	}
+}
+
+func TestReconcileFirewallRuleStatePreservesDestinationZoneOrderWhenSetMatches(t *testing.T) {
+	resource := &firewallRuleResource{}
+	actual := firewallRuleResourceModel{
+		DestinationZones: []types.String{
+			types.StringValue("WAN"),
+			types.StringValue("VPN"),
+		},
+	}
+	expected := firewallRuleResourceModel{
+		DestinationZones: []types.String{
+			types.StringValue("VPN"),
+			types.StringValue("WAN"),
+		},
+	}
+
+	reconciled := resource.reconcileFirewallRuleState(actual, expected)
+
+	for i, zone := range expected.DestinationZones {
+		if reconciled.DestinationZones[i].ValueString() != zone.ValueString() {
+			t.Fatalf("expected destination_zones order to match plan, got %#v", reconciled.DestinationZones)
+		}
+	}
+}
+
+func TestReconcileFirewallRuleStateDoesNotMaskActualZoneChanges(t *testing.T) {
+	resource := &firewallRuleResource{}
+	actual := firewallRuleResourceModel{
+		SourceZones: []types.String{
+			types.StringValue("LAN"),
+			types.StringValue("DMZ"),
+		},
+	}
+	expected := firewallRuleResourceModel{
+		SourceZones: []types.String{
+			types.StringValue("LAN"),
+			types.StringValue("WAN"),
+		},
+	}
+
+	reconciled := resource.reconcileFirewallRuleState(actual, expected)
+
+	if reconciled.SourceZones[1].ValueString() != "DMZ" {
+		t.Fatalf("expected actual zone changes to remain visible, got %#v", reconciled.SourceZones)
+	}
+}
+
 func TestModelToAPIFirewallRuleOmitsAnyZones(t *testing.T) {
 	resource := &firewallRuleResource{}
 	model := firewallRuleResourceModel{

@@ -1097,6 +1097,14 @@ func (r *firewallRuleResource) reconcileFirewallRuleState(actual firewallRuleRes
 		actual.DestinationZones = []types.String{types.StringValue("Any")}
 	}
 
+	if sameStringSet(actual.SourceZones, expected.SourceZones) {
+		actual.SourceZones = expected.SourceZones
+	}
+
+	if sameStringSet(actual.DestinationZones, expected.DestinationZones) {
+		actual.DestinationZones = expected.DestinationZones
+	}
+
 	return actual
 }
 
@@ -1106,4 +1114,38 @@ func isAnyOnlyStringList(values []types.String) bool {
 	}
 
 	return strings.EqualFold(values[0].ValueString(), "Any")
+}
+
+func sameStringSet(a, b []types.String) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	counts := make(map[string]int, len(a))
+	for _, value := range a {
+		if value.IsNull() || value.IsUnknown() {
+			return false
+		}
+		counts[value.ValueString()]++
+	}
+
+	for _, value := range b {
+		if value.IsNull() || value.IsUnknown() {
+			return false
+		}
+
+		key := value.ValueString()
+		if counts[key] == 0 {
+			return false
+		}
+		counts[key]--
+	}
+
+	for _, remaining := range counts {
+		if remaining != 0 {
+			return false
+		}
+	}
+
+	return true
 }
