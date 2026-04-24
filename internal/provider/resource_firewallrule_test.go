@@ -124,6 +124,20 @@ func TestReconcileFirewallRuleStateKeepsAnyZones(t *testing.T) {
 	}
 }
 
+func TestReconcileFirewallRuleStateKeepsAnyServices(t *testing.T) {
+	resource := &firewallRuleResource{}
+	actual := firewallRuleResourceModel{}
+	expected := firewallRuleResourceModel{
+		Services: []types.String{types.StringValue("Any")},
+	}
+
+	reconciled := resource.reconcileFirewallRuleState(actual, expected)
+
+	if len(reconciled.Services) != 1 || reconciled.Services[0].ValueString() != "Any" {
+		t.Fatalf("expected services to remain Any, got %#v", reconciled.Services)
+	}
+}
+
 func TestReconcileFirewallRuleStatePreservesSourceZoneOrderWhenSetMatches(t *testing.T) {
 	resource := &firewallRuleResource{}
 	actual := firewallRuleResourceModel{
@@ -264,6 +278,22 @@ func TestModelToAPIFirewallRuleOmitsAnyZones(t *testing.T) {
 
 	if rule.NetworkPolicy.DestinationZones != nil {
 		t.Fatalf("expected destination_zones Any to be omitted from API payload, got %#v", rule.NetworkPolicy.DestinationZones)
+	}
+}
+
+func TestModelToAPIFirewallRuleOmitsAnyServices(t *testing.T) {
+	resource := &firewallRuleResource{}
+	model := firewallRuleResourceModel{
+		Name:       types.StringValue("allow_any_services"),
+		PolicyType: types.StringValue("Network"),
+		Action:     types.StringValue("Accept"),
+		Services:   []types.String{types.StringValue("Any")},
+	}
+
+	rule := resource.modelToAPIFirewallRule(model)
+
+	if rule.NetworkPolicy.Services != nil {
+		t.Fatalf("expected services Any to be omitted from API payload, got %#v", rule.NetworkPolicy.Services)
 	}
 }
 

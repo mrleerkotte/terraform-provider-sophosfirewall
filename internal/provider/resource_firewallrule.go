@@ -831,7 +831,7 @@ func populateCommonNetworkPolicyFields(policy *firewallrule.NetworkPolicy, model
 			policy.DestinationNetworks.Networks = append(policy.DestinationNetworks.Networks, network.ValueString())
 		}
 	}
-	if len(model.Services) > 0 {
+	if len(model.Services) > 0 && !isAnyOnlyStringList(model.Services) {
 		policy.Services = &firewallrule.ServiceList{Services: make([]string, 0, len(model.Services))}
 		for _, service := range model.Services {
 			policy.Services.Services = append(policy.Services.Services, service.ValueString())
@@ -940,7 +940,7 @@ func populateCommonUserPolicyFields(policy *firewallrule.UserPolicy, model firew
 			policy.DestinationNetworks.Networks = append(policy.DestinationNetworks.Networks, network.ValueString())
 		}
 	}
-	if len(model.Services) > 0 {
+	if len(model.Services) > 0 && !isAnyOnlyStringList(model.Services) {
 		policy.Services = &firewallrule.ServiceList{Services: make([]string, 0, len(model.Services))}
 		for _, service := range model.Services {
 			policy.Services.Services = append(policy.Services.Services, service.ValueString())
@@ -1095,6 +1095,10 @@ func (r *firewallRuleResource) reconcileFirewallRuleState(actual firewallRuleRes
 
 	if isAnyOnlyStringList(expected.DestinationZones) && len(actual.DestinationZones) == 0 {
 		actual.DestinationZones = []types.String{types.StringValue("Any")}
+	}
+
+	if isAnyOnlyStringList(expected.Services) && len(actual.Services) == 0 {
+		actual.Services = []types.String{types.StringValue("Any")}
 	}
 
 	if sameStringSet(actual.SourceZones, expected.SourceZones) {
