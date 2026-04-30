@@ -9,6 +9,8 @@ description: |-
 
 Manages a Sophos Firewall rule. This resource allows you to create, update, and delete firewall rules in your Sophos firewall.
 
+Use this resource for the rule body itself. If you want Terraform to manage ordered membership inside a Sophos rule group, use [`sophosfirewall_firewallrule_group`](./firewallrule_group.md) and put the rule names in `security_policy_list`.
+
 ## Example Usage
 
 ```hcl
@@ -16,15 +18,10 @@ resource "sophosfirewall_firewallrule" "allow_internal_web" {
   name        = "allow_internal_web"
   description = "Allow HTTP/HTTPS traffic from LAN to WAN"
   policy_type = "Network"
-  status      = "Enable"
-  position    = "Top"
-  ip_family   = "IPv4"
   
   # Rule action
-  action                   = "Accept"
-  log_traffic              = "Enable"
-  skip_local_destined      = "Disable"
-  schedule                 = "All The Time"
+  action      = "Accept"
+  log_traffic = "Enable"
   
   # Zone settings
   source_zones      = ["LAN"]
@@ -39,29 +36,31 @@ resource "sophosfirewall_firewallrule" "allow_internal_web" {
     sophosfirewall_iphost.terraformSrc2,
     sophosfirewall_iphost.terraformDst3
   ]
+}
+```
 
-  #Advanced security
-  traffic_shapping_policy          = "None"
-  web_filter                       = "Allow All"
-  scan_virus                       = "Enable"
-  zero_day_protection              = "Enable"
-  application_control              = "None"
-  block_quick_quic                 = "Disable" 
-  decrypt_https                    = "Disable" 
-  dest_security_heartbeat          = "Disable" 
-  source_security_heartbeat        = "Disable"
-  dscp_marking                     = "-1" 
-  intrusion_prevention             = "None" 
-  minimum_destination_hb_permitted = "No Restriction" 
-  minimum_source_hb_permitted      = "No Restriction" 
-  proxy_mode                       = "Disable" 
-  scan_ftp                         = "Disable" 
-  scan_imap                        = "Disable" 
-  scan_imaps                       = "Disable" 
-  scan_pop3                        = "Disable" 
-  scan_pop3s                       = "Disable" 
-  scan_smtp                        = "Disable" 
-  scan_smtps                       = "Disable" 
+### Rule Body With Group-Owned Ordering
+
+```hcl
+resource "sophosfirewall_firewallrule" "app_to_db" {
+  name        = "example_app_to_db"
+  description = "Allow application traffic to the database tier"
+  policy_type = "Network"
+  action      = "Accept"
+
+  source_zones      = ["APP"]
+  destination_zones = ["DB"]
+  source_networks   = ["app-node-a", "app-node-b"]
+  services          = ["EXAMPLE-DB"]
+}
+
+resource "sophosfirewall_firewallrule_group" "managed" {
+  name        = "example_managed_group"
+  policy_type = "Any"
+
+  security_policy_list = [
+    sophosfirewall_firewallrule.app_to_db.name,
+  ]
 }
 ```
 
@@ -73,10 +72,11 @@ The following arguments are supported:
 * `description` - (Optional) Description of the rule.
 * `ip_family` - (Optional) IP Family (IPv4 or IPv6). Defaults to IPv4.
 * `status` - (Optional) Status (Enable or Disable). Defaults to Enable.
-* `position` - (Optional) Position (Top, Bottom, After, Before). Where to position the rule. Changing this recreates the rule. When Sophos internally rewrites `Bottom` or `Before` to an equivalent `After` position, the provider preserves the configured intent in Terraform state.
 * `policy_type` - (Required) Policy Type (Network).
-* `after_rule` - (Optional) Rule to position after (used when position is 'After'). Changing this recreates the rule.
-* `before_rule` - (Optional) Rule to position before (used when position is 'Before'). Changing this recreates the rule.
+* `position` - (Optional) Position (Top, Bottom, After, Before). Use this only when you want the rule resource itself to control order. If you manage the rule through `sophosfirewall_firewallrule_group.security_policy_list`, omit per-rule ordering fields.
+* `rule_group_name` - (Optional) Name of the Sophos firewall rule group for this rule. Prefer managing group membership and order through `sophosfirewall_firewallrule_group`.
+* `after_rule` - (Optional) Rule to position after (used when position is 'After').
+* `before_rule` - (Optional) Rule to position before (used when position is 'Before').
 * `action` - (Required) Action (Accept, Reject, Drop).
 * `log_traffic` - (Optional) Log traffic (Enable or Disable). Defaults to Disable.
 * `skip_local_destined` - (Optional) Skip local destined (Enable or Disable). Defaults to Disable.
@@ -87,6 +87,11 @@ The following arguments are supported:
 * `source_networks` - (Optional) List of source networks.
 * `destination_networks` - (Optional) List of destination networks.
 * `services` - (Optional) List of Sophos service object names to match in the rule.
+
+## Notes
+
+* For managed ordered rule sets, use `sophosfirewall_firewallrule_group.security_policy_list` as the source of truth for order.
+* Avoid mixing group-owned ordering with per-rule `position`, `after_rule`, or `before_rule` for the same ruleset.
 
 ## Import
 

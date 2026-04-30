@@ -33,6 +33,10 @@ type getFirewallRuleBlockXML struct {
 	FirewallRule firewallRuleNameXML `xml:"FirewallRule"`
 }
 
+type getFirewallRulesBlockXML struct {
+	FirewallRule struct{} `xml:"FirewallRule"`
+}
+
 type removeFirewallRuleBlockXML struct {
 	FirewallRule firewallRuleNameXML `xml:"FirewallRule"`
 }
@@ -54,6 +58,36 @@ func (c *Client) ReadFirewallRule(name string) (*FirewallRule, error) {
 			FirewallRule: firewallRuleNameXML{Name: name},
 		},
 	}
+
+	rules, err := c.readFirewallRules(request)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range rules {
+		if rules[i].Name == name {
+			return &rules[i], nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ReadFirewallRules reads the full ordered firewall rule list.
+func (c *Client) ReadFirewallRules() ([]FirewallRule, error) {
+	request := common.RequestXML{
+		XMLName: xml.Name{Local: "Request"},
+		Login: common.LoginXML{
+			Username: c.BaseClient.Username,
+			Password: c.BaseClient.Password,
+		},
+		Get: getFirewallRulesBlockXML{},
+	}
+
+	return c.readFirewallRules(request)
+}
+
+func (c *Client) readFirewallRules(request common.RequestXML) ([]FirewallRule, error) {
 
 	xmlData, err := xml.MarshalIndent(request, "", "  ")
 	if err != nil {
@@ -142,22 +176,7 @@ func (c *Client) ReadFirewallRule(name string) (*FirewallRule, error) {
 		return nil, fmt.Errorf("Sophos API error: %s - %s", response.Error.Code, response.Error.Message)
 	}
 
-	// Find the correct rule by name
-	var foundRule *FirewallRule
-	for i := range response.FirewallRule {
-		if response.FirewallRule[i].Name == name {
-			foundRule = &response.FirewallRule[i]
-			break
-		}
-	}
-
-	// Return the found FirewallRule or nil if not found
-	if foundRule != nil {
-		return foundRule, nil
-	}
-
-	// If we get here, the specific FirewallRule wasn't found in the list
-	return nil, nil // Or potentially return an error if finding 0 is unexpected
+	return response.FirewallRule, nil
 }
 
 // UpdateIPHost updates an existing IP Host.

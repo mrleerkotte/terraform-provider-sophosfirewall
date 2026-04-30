@@ -125,6 +125,7 @@ type firewallRuleResourceModel struct {
 	Status                           types.String   `tfsdk:"status"`
 	Position                         types.String   `tfsdk:"position"`
 	PolicyType                       types.String   `tfsdk:"policy_type"`
+	RuleGroupName                    types.String   `tfsdk:"rule_group_name"`
 	AfterRule                        types.String   `tfsdk:"after_rule"`
 	BeforeRule                       types.String   `tfsdk:"before_rule"`
 	MatchIdentity                    types.String   `tfsdk:"match_identity"`
@@ -197,47 +198,56 @@ func (r *firewallRuleResource) Schema(_ context.Context, _ resource.SchemaReques
 				Description: "IP Family (IPv4 or IPv6)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"status": schema.StringAttribute{
 				Description: "Status (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"position": schema.StringAttribute{
 				Description: "Position (Top, Bottom, After, Before)",
 				Optional:    true,
 				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"policy_type": schema.StringAttribute{
 				Description: "Policy Type (Network or User)",
 				Required:    true,
 			},
+			"rule_group_name": schema.StringAttribute{
+				Description: "Optional Sophos firewall rule group this rule belongs to",
+				Optional:    true,
+			},
 			"after_rule": schema.StringAttribute{
 				Description: "Rule to position after (used when position is 'After')",
 				Optional:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
+				Computed:    true,
 			},
 			"before_rule": schema.StringAttribute{
 				Description: "Rule to position before (used when position is 'Before')",
 				Optional:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
+				Computed:    true,
 			},
 			"match_identity": schema.StringAttribute{
 				Description: "For user policies, whether to match known users (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"show_captive_portal": schema.StringAttribute{
 				Description: "For user policies, whether unknown users use captive portal authentication",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"identity_members": schema.ListAttribute{
 				Description: "For user policies, users or groups matched by the rule",
@@ -248,6 +258,9 @@ func (r *firewallRuleResource) Schema(_ context.Context, _ resource.SchemaReques
 				Description: "For user policies, data accounting behavior",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"action": schema.StringAttribute{
 				Description: "Action (Accept, Reject, Drop)",
@@ -257,11 +270,17 @@ func (r *firewallRuleResource) Schema(_ context.Context, _ resource.SchemaReques
 				Description: "Log traffic (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"skip_local_destined": schema.StringAttribute{
 				Description: "Skip local destined (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"source_zones": schema.ListAttribute{
 				Description: "List of source zones",
@@ -277,6 +296,9 @@ func (r *firewallRuleResource) Schema(_ context.Context, _ resource.SchemaReques
 				Description: "Schedule name",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"source_networks": schema.ListAttribute{
 				Description: "List of source networks",
@@ -297,126 +319,201 @@ func (r *firewallRuleResource) Schema(_ context.Context, _ resource.SchemaReques
 				Description: "DSCP Marking value",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"web_filter": schema.StringAttribute{
 				Description: "Web Filter policy",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"web_category_base_qos_policy": schema.StringAttribute{
 				Description: "Web Category Base QoS Policy",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"block_quick_quic": schema.StringAttribute{
 				Description: "Block Quick/QUIC protocol (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"scan_virus": schema.StringAttribute{
 				Description: "Scan for viruses (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"zero_day_protection": schema.StringAttribute{
 				Description: "Zero Day Protection (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"proxy_mode": schema.StringAttribute{
 				Description: "Proxy Mode (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"decrypt_https": schema.StringAttribute{
 				Description: "Decrypt HTTPS (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"application_control": schema.StringAttribute{
 				Description: "Application Control policy",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"application_base_qos_policy": schema.StringAttribute{
 				Description: "Application Base QoS Policy",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"intrusion_prevention": schema.StringAttribute{
 				Description: "Intrusion Prevention policy",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"traffic_shapping_policy": schema.StringAttribute{
 				Description: "Traffic Shaping Policy",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"web_filter_internet_scheme": schema.StringAttribute{
 				Description: "Web Filter Internet Scheme (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"application_control_internet_scheme": schema.StringAttribute{
 				Description: "Application Control Internet Scheme (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"scan_smtp": schema.StringAttribute{
 				Description: "Scan SMTP (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"scan_smtps": schema.StringAttribute{
 				Description: "Scan SMTPS (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"scan_imap": schema.StringAttribute{
 				Description: "Scan IMAP (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"scan_imaps": schema.StringAttribute{
 				Description: "Scan IMAPS (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"scan_pop3": schema.StringAttribute{
 				Description: "Scan POP3 (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"scan_pop3s": schema.StringAttribute{
 				Description: "Scan POP3S (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"scan_ftp": schema.StringAttribute{
 				Description: "Scan FTP (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"source_security_heartbeat": schema.StringAttribute{
 				Description: "Source Security Heartbeat (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"minimum_source_hb_permitted": schema.StringAttribute{
 				Description: "Minimum Source HB Permitted",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"dest_security_heartbeat": schema.StringAttribute{
 				Description: "Destination Security Heartbeat (Enable or Disable)",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"minimum_destination_hb_permitted": schema.StringAttribute{
 				Description: "Minimum Destination HB Permitted",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -454,6 +551,8 @@ func (r *firewallRuleResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
+	plan = planWithDefaultCreateOrdering(plan)
+
 	// Convert the model to API structure
 	rule := r.modelToAPIFirewallRule(plan)
 
@@ -476,8 +575,14 @@ func (r *firewallRuleResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
+	liveRules, err := r.client.ReadFirewallRules()
+	if err != nil {
+		resp.Diagnostics.AddError("Error reading firewall rules after creation", err.Error())
+		return
+	}
+
 	// Update the state with the actual created rule
-	state := r.reconcileFirewallRuleState(r.apiToModelFirewallRule(*createdRule), plan)
+	state := r.reconcileFirewallRulePostApply(r.apiToModelFirewallRule(*createdRule), plan, liveRules)
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
 }
@@ -491,11 +596,19 @@ func (r *firewallRuleResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	// Get the firewall rule from the API
-	rule, err := r.client.ReadFirewallRule(state.Name.ValueString())
+	// Get the full firewall rule list so ordering checks can account for unmanaged rules.
+	rules, err := r.client.ReadFirewallRules()
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading firewall rule", err.Error())
+		resp.Diagnostics.AddError("Error reading firewall rules", err.Error())
 		return
+	}
+
+	var rule *firewallrule.FirewallRule
+	for i := range rules {
+		if rules[i].Name == state.Name.ValueString() {
+			rule = &rules[i]
+			break
+		}
 	}
 
 	if rule == nil {
@@ -505,7 +618,7 @@ func (r *firewallRuleResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	// Update the Terraform state
-	state = r.reconcileFirewallRuleState(r.apiToModelFirewallRule(*rule), state)
+	state = r.reconcileFirewallRuleRead(r.apiToModelFirewallRule(*rule), state, rules)
 
 	// Save the updated state
 	diags = resp.State.Set(ctx, &state)
@@ -526,13 +639,72 @@ func (r *firewallRuleResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
+	explicitOrdering := hasExplicitOrdering(plan)
+	if !explicitOrdering {
+		existingRule, err := r.client.ReadFirewallRule(plan.Name.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("Error reading existing firewall rule", err.Error())
+			return
+		}
+		if existingRule == nil {
+			resp.Diagnostics.AddError("Error reading existing firewall rule", "Firewall rule was not found before update")
+			return
+		}
+		plan = planWithExistingOrdering(plan, *existingRule)
+	}
+
+	liveRulesBefore, err := r.client.ReadFirewallRules()
+	if err != nil {
+		resp.Diagnostics.AddError("Error reading firewall rules before update", err.Error())
+		return
+	}
+
 	// Convert the model to API structure
 	rule := r.modelToAPIFirewallRule(plan)
 
 	// Update the firewall rule
-	err := r.client.UpdateFirewallRule(rule)
+	err = r.client.UpdateFirewallRule(rule)
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating firewall rule", err.Error())
+		return
+	}
+
+	liveRulesAfter, err := r.client.ReadFirewallRules()
+	if err != nil {
+		resp.Diagnostics.AddError("Error reading firewall rules after update", err.Error())
+		return
+	}
+
+	if explicitOrdering && shouldRetryFirewallRuleMove(plan, liveRulesBefore, liveRulesAfter) {
+		stagedRule := cloneFirewallRule(rule)
+		stagedRule.Position = stagingPositionForFirewallRuleMove(plan, liveRulesBefore)
+		stagedRule.After = nil
+		stagedRule.Before = nil
+
+		err = r.client.UpdateFirewallRule(stagedRule)
+		if err != nil {
+			resp.Diagnostics.AddError("Error retrying firewall rule reorder", err.Error())
+			return
+		}
+
+		err = r.client.UpdateFirewallRule(rule)
+		if err != nil {
+			resp.Diagnostics.AddError("Error applying firewall rule reorder after staging move", err.Error())
+			return
+		}
+
+		liveRulesAfter, err = r.client.ReadFirewallRules()
+		if err != nil {
+			resp.Diagnostics.AddError("Error reading firewall rules after staged reorder", err.Error())
+			return
+		}
+	}
+
+	if explicitOrdering && !isFirewallRuleMoveSatisfied(plan, liveRulesAfter) {
+		resp.Diagnostics.AddError(
+			"Error updating firewall rule order",
+			firewallRuleMoveFailureMessage(plan, liveRulesAfter),
+		)
 		return
 	}
 
@@ -549,7 +721,7 @@ func (r *firewallRuleResource) Update(ctx context.Context, req resource.UpdateRe
 	}
 
 	// Update the state with the actual updated rule
-	state := r.reconcileFirewallRuleState(r.apiToModelFirewallRule(*updatedRule), plan)
+	state := r.reconcileFirewallRulePostApply(r.apiToModelFirewallRule(*updatedRule), plan, liveRulesAfter)
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 }
@@ -637,15 +809,51 @@ func (r *firewallRuleResource) modelToAPIFirewallRule(model firewallRuleResource
 	return rule
 }
 
+func hasExplicitOrdering(model firewallRuleResourceModel) bool {
+	return (!model.Position.IsNull() && !model.Position.IsUnknown() && model.Position.ValueString() != "") ||
+		(!model.AfterRule.IsNull() && !model.AfterRule.IsUnknown() && model.AfterRule.ValueString() != "") ||
+		(!model.BeforeRule.IsNull() && !model.BeforeRule.IsUnknown() && model.BeforeRule.ValueString() != "")
+}
+
+func planWithDefaultCreateOrdering(plan firewallRuleResourceModel) firewallRuleResourceModel {
+	if hasExplicitOrdering(plan) {
+		return plan
+	}
+
+	plan.Position = types.StringValue("Bottom")
+	plan.AfterRule = types.StringNull()
+	plan.BeforeRule = types.StringNull()
+	return plan
+}
+
+func planWithExistingOrdering(plan firewallRuleResourceModel, existing firewallrule.FirewallRule) firewallRuleResourceModel {
+	plan.Position = stringValueOrNull(existing.Position)
+
+	if existing.After != nil {
+		plan.AfterRule = types.StringValue(existing.After.Name)
+	} else {
+		plan.AfterRule = types.StringNull()
+	}
+
+	if existing.Before != nil {
+		plan.BeforeRule = types.StringValue(existing.Before.Name)
+	} else {
+		plan.BeforeRule = types.StringNull()
+	}
+
+	return plan
+}
+
 // Helper method to convert from API structure to Terraform model
 func (r *firewallRuleResource) apiToModelFirewallRule(rule firewallrule.FirewallRule) firewallRuleResourceModel {
 	model := firewallRuleResourceModel{
-		Name:        types.StringValue(rule.Name),
-		Description: stringValueOrNull(rule.Description),
-		IPFamily:    types.StringValue(rule.IPFamily),
-		Status:      types.StringValue(rule.Status),
-		Position:    types.StringValue(rule.Position),
-		PolicyType:  types.StringValue(rule.PolicyType),
+		Name:          types.StringValue(rule.Name),
+		Description:   stringValueOrNull(rule.Description),
+		IPFamily:      types.StringValue(rule.IPFamily),
+		Status:        types.StringValue(rule.Status),
+		Position:      types.StringValue(rule.Position),
+		PolicyType:    types.StringValue(rule.PolicyType),
+		RuleGroupName: types.StringNull(),
 	}
 
 	// Set position references
@@ -1067,6 +1275,7 @@ func validateFirewallRulePlan(plan firewallRuleResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	isUserPolicy := strings.EqualFold(plan.PolicyType.ValueString(), "User")
+
 	hasUserOnlyFields := len(plan.IdentityMembers) > 0 ||
 		(!plan.MatchIdentity.IsNull() && !plan.MatchIdentity.IsUnknown() && plan.MatchIdentity.ValueString() != "") ||
 		(!plan.ShowCaptivePortal.IsNull() && !plan.ShowCaptivePortal.IsUnknown() && plan.ShowCaptivePortal.ValueString() != "") ||
@@ -1082,7 +1291,7 @@ func validateFirewallRulePlan(plan firewallRuleResourceModel) diag.Diagnostics {
 	return diags
 }
 
-func (r *firewallRuleResource) reconcileFirewallRuleState(actual firewallRuleResourceModel, expected firewallRuleResourceModel) firewallRuleResourceModel {
+func (r *firewallRuleResource) reconcileFirewallRulePostApply(actual firewallRuleResourceModel, expected firewallRuleResourceModel, liveRules []firewallrule.FirewallRule) firewallRuleResourceModel {
 	if !expected.Position.IsNull() && expected.Position.ValueString() == "Bottom" {
 		actual.Position = types.StringValue("Bottom")
 		actual.AfterRule = types.StringNull()
@@ -1090,10 +1299,22 @@ func (r *firewallRuleResource) reconcileFirewallRuleState(actual firewallRuleRes
 	}
 
 	if !expected.Position.IsNull() && expected.Position.ValueString() == "Before" {
-		actual.Position = types.StringValue("Before")
-		actual.AfterRule = types.StringNull()
-		if !expected.BeforeRule.IsNull() {
-			actual.BeforeRule = expected.BeforeRule
+		if shouldPreserveBeforeAnchor(actual.Name.ValueString(), expected.BeforeRule, liveRules) {
+			actual.Position = types.StringValue("Before")
+			actual.AfterRule = types.StringNull()
+			if !expected.BeforeRule.IsNull() {
+				actual.BeforeRule = expected.BeforeRule
+			}
+		}
+	}
+
+	if !expected.Position.IsNull() && expected.Position.ValueString() == "After" {
+		if shouldPreserveAfterAnchor(actual.Name.ValueString(), expected.AfterRule, liveRules) {
+			actual.Position = types.StringValue("After")
+			actual.BeforeRule = types.StringNull()
+			if !expected.AfterRule.IsNull() {
+				actual.AfterRule = expected.AfterRule
+			}
 		}
 	}
 
@@ -1130,6 +1351,271 @@ func (r *firewallRuleResource) reconcileFirewallRuleState(actual firewallRuleRes
 	}
 
 	return actual
+}
+
+func (r *firewallRuleResource) reconcileFirewallRuleRead(actual firewallRuleResourceModel, expected firewallRuleResourceModel, liveRules []firewallrule.FirewallRule) firewallRuleResourceModel {
+	if !expected.Position.IsNull() && expected.Position.ValueString() == "Bottom" {
+		actual.Position = types.StringValue("Bottom")
+		actual.AfterRule = types.StringNull()
+		actual.BeforeRule = types.StringNull()
+	}
+
+	if isAnyOnlyStringList(expected.SourceZones) && len(actual.SourceZones) == 0 {
+		actual.SourceZones = []types.String{types.StringValue("Any")}
+	}
+
+	if isAnyOnlyStringList(expected.DestinationZones) && len(actual.DestinationZones) == 0 {
+		actual.DestinationZones = []types.String{types.StringValue("Any")}
+	}
+
+	if isAnyOnlyStringList(expected.Services) && len(actual.Services) == 0 {
+		actual.Services = []types.String{types.StringValue("Any")}
+	}
+
+	if sameStringSet(actual.SourceZones, expected.SourceZones) {
+		actual.SourceZones = expected.SourceZones
+	}
+
+	if sameStringSet(actual.DestinationZones, expected.DestinationZones) {
+		actual.DestinationZones = expected.DestinationZones
+	}
+
+	if sameStringSet(actual.SourceNetworks, expected.SourceNetworks) {
+		actual.SourceNetworks = expected.SourceNetworks
+	}
+
+	if sameStringSet(actual.DestinationNetworks, expected.DestinationNetworks) {
+		actual.DestinationNetworks = expected.DestinationNetworks
+	}
+
+	if sameStringSet(actual.Services, expected.Services) {
+		actual.Services = expected.Services
+	}
+
+	return actual
+}
+
+func cloneFirewallRule(rule *firewallrule.FirewallRule) *firewallrule.FirewallRule {
+	cloned := *rule
+	return &cloned
+}
+
+func shouldRetryFirewallRuleMove(plan firewallRuleResourceModel, before, after []firewallrule.FirewallRule) bool {
+	if plan.Position.IsNull() || plan.Position.IsUnknown() {
+		return false
+	}
+
+	position := plan.Position.ValueString()
+	if position != "After" && position != "Before" {
+		return false
+	}
+
+	return !isFirewallRuleMoveSatisfied(plan, after) && isFirewallRuleMoveDirectionChanged(plan, before)
+}
+
+func isFirewallRuleMoveDirectionChanged(plan firewallRuleResourceModel, liveRules []firewallrule.FirewallRule) bool {
+	if plan.Position.IsNull() || plan.Position.IsUnknown() {
+		return false
+	}
+
+	switch plan.Position.ValueString() {
+	case "After":
+		if plan.AfterRule.IsNull() || plan.AfterRule.IsUnknown() || plan.AfterRule.ValueString() == "" {
+			return false
+		}
+		ruleIndex, anchorIndex, ok := ruleAndAnchorIndexes(plan.Name.ValueString(), plan.AfterRule.ValueString(), liveRules)
+		return ok && anchorIndex > ruleIndex
+	case "Before":
+		if plan.BeforeRule.IsNull() || plan.BeforeRule.IsUnknown() || plan.BeforeRule.ValueString() == "" {
+			return false
+		}
+		ruleIndex, anchorIndex, ok := ruleAndAnchorIndexes(plan.Name.ValueString(), plan.BeforeRule.ValueString(), liveRules)
+		return ok && anchorIndex < ruleIndex
+	default:
+		return false
+	}
+}
+
+func stagingPositionForFirewallRuleMove(plan firewallRuleResourceModel, liveRules []firewallrule.FirewallRule) string {
+	if plan.Position.IsNull() || plan.Position.IsUnknown() {
+		return "Bottom"
+	}
+
+	switch plan.Position.ValueString() {
+	case "After":
+		if plan.AfterRule.IsNull() || plan.AfterRule.IsUnknown() || plan.AfterRule.ValueString() == "" {
+			return "Bottom"
+		}
+		ruleIndex, anchorIndex, ok := ruleAndAnchorIndexes(plan.Name.ValueString(), plan.AfterRule.ValueString(), liveRules)
+		if ok && anchorIndex > ruleIndex {
+			return "Bottom"
+		}
+	case "Before":
+		if plan.BeforeRule.IsNull() || plan.BeforeRule.IsUnknown() || plan.BeforeRule.ValueString() == "" {
+			return "Top"
+		}
+		ruleIndex, anchorIndex, ok := ruleAndAnchorIndexes(plan.Name.ValueString(), plan.BeforeRule.ValueString(), liveRules)
+		if ok && anchorIndex < ruleIndex {
+			return "Top"
+		}
+	}
+
+	return "Top"
+}
+
+func isFirewallRuleMoveSatisfied(plan firewallRuleResourceModel, liveRules []firewallrule.FirewallRule) bool {
+	if plan.Position.IsNull() || plan.Position.IsUnknown() {
+		return true
+	}
+
+	switch plan.Position.ValueString() {
+	case "Top":
+		ruleIndex, ok := ruleIndexByName(plan.Name.ValueString(), liveRules)
+		return ok && ruleIndex == 0
+	case "Bottom":
+		ruleIndex, ok := ruleIndexByName(plan.Name.ValueString(), liveRules)
+		return ok && ruleIndex == len(liveRules)-1
+	case "After":
+		return hasImmediateAfterAnchor(plan.Name.ValueString(), plan.AfterRule, liveRules)
+	case "Before":
+		return hasImmediateBeforeAnchor(plan.Name.ValueString(), plan.BeforeRule, liveRules)
+	default:
+		return true
+	}
+}
+
+func firewallRuleMoveFailureMessage(plan firewallRuleResourceModel, liveRules []firewallrule.FirewallRule) string {
+	actualAnchor := ""
+
+	switch plan.Position.ValueString() {
+	case "After":
+		actualAnchor = immediatePredecessor(plan.Name.ValueString(), liveRules)
+		if actualAnchor == "" {
+			actualAnchor = "<none>"
+		}
+		return fmt.Sprintf(
+			"Sophos did not apply the requested order change for rule %q. Expected it immediately after %q, but its actual predecessor is %q.",
+			plan.Name.ValueString(),
+			plan.AfterRule.ValueString(),
+			actualAnchor,
+		)
+	case "Before":
+		actualAnchor = immediateSuccessor(plan.Name.ValueString(), liveRules)
+		if actualAnchor == "" {
+			actualAnchor = "<none>"
+		}
+		return fmt.Sprintf(
+			"Sophos did not apply the requested order change for rule %q. Expected it immediately before %q, but its actual successor is %q.",
+			plan.Name.ValueString(),
+			plan.BeforeRule.ValueString(),
+			actualAnchor,
+		)
+	case "Top":
+		return fmt.Sprintf("Sophos did not move rule %q to the top of the firewall rule list.", plan.Name.ValueString())
+	case "Bottom":
+		return fmt.Sprintf("Sophos did not move rule %q to the bottom of the firewall rule list.", plan.Name.ValueString())
+	default:
+		return fmt.Sprintf("Sophos did not apply the requested order change for rule %q.", plan.Name.ValueString())
+	}
+}
+
+func shouldPreserveAfterAnchor(ruleName string, expectedAfter types.String, liveRules []firewallrule.FirewallRule) bool {
+	if expectedAfter.IsNull() || expectedAfter.IsUnknown() || expectedAfter.ValueString() == "" {
+		return false
+	}
+
+	ruleIndex, anchorIndex, ok := ruleAndAnchorIndexes(ruleName, expectedAfter.ValueString(), liveRules)
+	return ok && anchorIndex < ruleIndex
+}
+
+func shouldPreserveBeforeAnchor(ruleName string, expectedBefore types.String, liveRules []firewallrule.FirewallRule) bool {
+	if expectedBefore.IsNull() || expectedBefore.IsUnknown() || expectedBefore.ValueString() == "" {
+		return false
+	}
+
+	ruleIndex, anchorIndex, ok := ruleAndAnchorIndexes(ruleName, expectedBefore.ValueString(), liveRules)
+	return ok && ruleIndex < anchorIndex
+}
+
+func hasImmediateAfterAnchor(ruleName string, expectedAfter types.String, liveRules []firewallrule.FirewallRule) bool {
+	if expectedAfter.IsNull() || expectedAfter.IsUnknown() || expectedAfter.ValueString() == "" {
+		return false
+	}
+
+	ruleIndex, anchorIndex, ok := ruleAndAnchorIndexes(ruleName, expectedAfter.ValueString(), liveRules)
+	return ok && ruleIndex == anchorIndex+1
+}
+
+func hasImmediateBeforeAnchor(ruleName string, expectedBefore types.String, liveRules []firewallrule.FirewallRule) bool {
+	if expectedBefore.IsNull() || expectedBefore.IsUnknown() || expectedBefore.ValueString() == "" {
+		return false
+	}
+
+	ruleIndex, anchorIndex, ok := ruleAndAnchorIndexes(ruleName, expectedBefore.ValueString(), liveRules)
+	return ok && anchorIndex == ruleIndex+1
+}
+
+func ruleAndAnchorIndexes(ruleName, anchorName string, liveRules []firewallrule.FirewallRule) (int, int, bool) {
+	ruleIndex := -1
+	anchorIndex := -1
+
+	for i := range liveRules {
+		switch liveRules[i].Name {
+		case ruleName:
+			ruleIndex = i
+		case anchorName:
+			anchorIndex = i
+		}
+	}
+
+	return ruleIndex, anchorIndex, ruleIndex >= 0 && anchorIndex >= 0
+}
+
+func ruleIndexByName(ruleName string, liveRules []firewallrule.FirewallRule) (int, bool) {
+	for i := range liveRules {
+		if liveRules[i].Name == ruleName {
+			return i, true
+		}
+	}
+
+	return -1, false
+}
+
+func immediatePredecessor(ruleName string, liveRules []firewallrule.FirewallRule) string {
+	index, ok := ruleIndexByName(ruleName, liveRules)
+	if !ok || index == 0 {
+		return ""
+	}
+
+	return liveRules[index-1].Name
+}
+
+func immediateSuccessor(ruleName string, liveRules []firewallrule.FirewallRule) string {
+	index, ok := ruleIndexByName(ruleName, liveRules)
+	if !ok || index == len(liveRules)-1 {
+		return ""
+	}
+
+	return liveRules[index+1].Name
+}
+
+func stringSliceValues(values []types.String) []string {
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		if value.IsNull() || value.IsUnknown() {
+			continue
+		}
+		result = append(result, value.ValueString())
+	}
+	return result
+}
+
+func stringModelValues(values []string) []types.String {
+	result := make([]types.String, 0, len(values))
+	for _, value := range values {
+		result = append(result, types.StringValue(value))
+	}
+	return result
 }
 
 func isAnyOnlyStringList(values []types.String) bool {

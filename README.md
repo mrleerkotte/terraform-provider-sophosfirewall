@@ -28,6 +28,7 @@ The provider uses compound resource names consistently:
 * `sophosfirewall_iphostgroup`
 * `sophosfirewall_machost`
 * `sophosfirewall_firewallrule`
+* `sophosfirewall_firewallrule_group`
 
 ## Example Usage
 
@@ -70,20 +71,28 @@ resource "sophosfirewall_firewallrule" "allow_internal_web" {
   name        = "Allow Internal Web Traffic"
   description = "Allow HTTP/HTTPS traffic from LAN to WAN"
   policy_type = "Network"
-  status      = "Enable"
-  position    = "Top"
-  ip_family   = "IPv4"
-  schedule    = "All The Time"
 
   action              = "Accept"
   log_traffic         = "Enable"
-  skip_local_destined = "Disable"
 
   source_zones      = ["LAN"]
   destination_zones = ["WAN"]
 
   source_networks      = [sophosfirewall_iphost.web_server.name]
   destination_networks = ["Any"]
+}
+```
+
+### Firewall Rule Group
+
+```hcl
+resource "sophosfirewall_firewallrule_group" "managed" {
+  name        = "example_managed_group"
+  policy_type = "Any"
+
+  security_policy_list = [
+    sophosfirewall_firewallrule.allow_internal_web.name,
+  ]
 }
 ```
 

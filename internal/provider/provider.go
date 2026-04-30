@@ -92,6 +92,7 @@ func (p *SophosProvider) Resources(_ context.Context) []func() resource.Resource
 		NewIPHostResource,
 		NewIPHostGroupResource,
 		NewMACHostResource,
+		NewFirewallRuleGroupResource,
 		NewFirewallRuleResource,
 	}
 }
@@ -102,4 +103,3 @@ func (p *SophosProvider) DataSources(_ context.Context) []func() datasource.Data
 		NewIPHostDataSource,
 	}
 }
-
